@@ -8,3 +8,5 @@ create zip from selected Files or from Folder
 
 - python 3
 - PyQt5
+
+![screenshot](https://github.com/Axel-Erfurt/QFilemanager/blob/master/screenshot.png)
