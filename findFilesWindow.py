@@ -1,11 +1,5 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
-###################################################################
-## Copyright (C) 2013 Riverbank Computing Limited.
-## Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
-## made by Axel Schneider * https://github.com/Axel-Erfurt/
-## August 2019
 ###################################################################
 import sys
 import csv, codecs 
@@ -79,6 +73,7 @@ class ListBox(QMainWindow):
 #      self.tb2.addWidget(self.noDot)
 ##Listbox########################################################## 
       self.lb = QTableWidget()
+      self.lb.setSelectionBehavior (QAbstractItemView.SelectRows)
       self.lb.setColumnCount(2)
       self.lb.setColumnWidth(0, 300)
 #      self.lb.setSelectionBehavior(self.lb.SelectRows)
@@ -109,7 +104,7 @@ class ListBox(QMainWindow):
       self.statusBar().addPermanentWidget(self.copyBtn)
 
       self.dir = self.folderEdit.text()
-      self.show()
+#      self.show()
     ## def ####################################
 
     def removeAllRows(self):
@@ -266,7 +261,7 @@ outline: 0;
 QTableWidget::item::hover{
 background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #babdb6, stop: 0.5 #d3d7cf, stop: 1 #babdb6);
 }
-QTreeView::item::focus
+QTableWidget::item::focus
 {
 background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #729fcf, stop: 1  #204a87);
 border: 0px;
