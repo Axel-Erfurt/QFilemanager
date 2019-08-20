@@ -352,7 +352,7 @@ class myWindow(QMainWindow):
 
     def findFiles(self):
         index = self.treeview.selectionModel().currentIndex()
-        path = self.dirModel.fileInfo(index).filePath()
+        path = self.dirModel.fileInfo(index).absoluteFilePath()
         print("open findWindow")
         self.w = findFilesWindow.ListBox()
         self.w.show()
