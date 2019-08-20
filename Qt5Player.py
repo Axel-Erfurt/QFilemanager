@@ -204,7 +204,7 @@ class VideoPlayer(QWidget):
         self.mediaPlayer.stop()
         self.resume_screensaver()
         print("Goodbye ...")
-        quit()
+        self.close()
     
     def contextMenuRequested(self,point):
         menu = QMenu()
