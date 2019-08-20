@@ -450,7 +450,7 @@ class myWindow(QMainWindow):
     def list_doubleClicked(self):
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).absoluteFilePath()
-        self.process.startDetached("xdg-open",  [path])
+        QDesktopServices.openUrl(QUrl(path , QUrl.TolerantMode | QUrl.EncodeUnicode))
 
     def infobox(self, message):
         title = "QFilemager"
