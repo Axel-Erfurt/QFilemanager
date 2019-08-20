@@ -1,5 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+
+###################################################################
+## Copyright (C) 2013 Riverbank Computing Limited.
+## Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
+## made by Axel Schneider * https://github.com/Axel-Erfurt/
+## August 2019
 ###################################################################
 import sys
 import csv, codecs 
