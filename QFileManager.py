@@ -22,16 +22,25 @@ class helpWindow(QMainWindow):
     def __init__(self):
         super(helpWindow, self).__init__()
         self.setStyleSheet(mystylesheet(myWindow()))
-        self.helpText ="""<span>(see context menu)</strong></span></p><h3>Features:</h3>drag and drop Files to copy (SHIFT to move)<br>open Files with default app<br></span>
-                                        </strong></span></p><h3>Shortcuts:</h3><br>
-                                        rename File (F2)<br>
-                                        copy File(s) (Ctrl-C)<br>
-                                        paste File(s) (Ctrl-V)<br>
-                                        cut File(s) (Ctrl-X)<br>
-                                        open with TextEditor (F6)<br>
-                                        cut File(s) (Del)<br>
-                                        find File(s) (Ctrl-F)<br>
-                                        play with vlc (F3)</strong></span></p>
+        self.helpText ="""<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><!--StartFragment--><span style=" font-family:'Helvetica'; font-size:11pt; font-weight:600; text-decoration: underline; color:#2e3436;">Features:</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">drag and drop Files to copy (SHIFT to move)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">open Files with default app</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">create zip from Folder</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">create zip from selected File(s)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">show/hide hidden File(s)</span></p>
+<p style="-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Helvetica'; font-size:9pt; color:#2e3436;"><br /></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:11pt; font-weight:600; text-decoration: underline; color:#2e3436;">Shortcuts:</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">rename File (F2)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">copy File(s) (Ctrl-C)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">paste File(s) (Ctrl-V)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">cut File(s) (Ctrl-X)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">open with TextEditor (F6)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">move File(s) to Trash(Del)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">delete File(s) (Shift+Del)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">find File(s) (Ctrl-F)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">play with vlc (F3)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">open folder in Terminal (F7)</span></p>
+<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">execute File in Terminal (F8)</span><!--EndFragment--></p>
                                         """
         self.helpViewer = QLabel(self.helpText, self)
         self.helpViewer.setAlignment(Qt.AlignCenter)
@@ -42,16 +51,16 @@ class helpWindow(QMainWindow):
 
         widget = QWidget(self)
         layout = QVBoxLayout(widget)
-        layout.setAlignment(Qt.AlignCenter)
+#        layout.setAlignment(Qt.AlignCenter)
 
         layout.addWidget(self.helpViewer)
         layout.addStretch()
-        layout.addWidget(self.btnAbout)
+        layout.addWidget(self.btnAbout, alignment=Qt.AlignCenter)
         self.setCentralWidget(widget)
 
         self.setWindowTitle("Help")
         self.setWindowIcon(QIcon.fromTheme("help-about"))
-        self.setGeometry(0, 26, 600, 450)
+        self.setGeometry(0, 26, 600, 420)
 
     def aboutApp(self):
         sysinfo = QSysInfo()
@@ -123,8 +132,6 @@ class myWindow(QMainWindow):
         self.listview.setModel(self.fileModel)
         self.treeview.setRootIsDecorated(True)
 
-#        self.listview.setSelectionBehavior (QAbstractItemView.SelectRows )
-#        self.listview.customContextMenuRequested.connect(self.contextMenuEvent)
         self.listview.header().resizeSection(0, 320)
         self.listview.header().resizeSection(1, 80)
         self.listview.header().resizeSection(2, 80)
@@ -291,6 +298,11 @@ class myWindow(QMainWindow):
         self.treeview.addAction(self.terminalAction) 
         self.listview.addAction(self.terminalAction) 
 
+        self.startInTerminalAction = QAction(QIcon.fromTheme("terminal"), "execute in Terminal",  triggered=self.startInTerminal)
+        self.terminalAction.setShortcut(QKeySequence(Qt.Key_F8))
+        self.terminalAction.setShortcutVisibleInContextMenu(True)
+        self.listview.addAction(self.startInTerminalAction) 
+
         self.executableAction = QAction(QIcon.fromTheme("applications-utilities"), "make executable",  triggered=self.makeExecutable)
         self.listview.addAction(self.executableAction) 
 
@@ -307,6 +319,11 @@ class myWindow(QMainWindow):
         print(wd)
 #        self.process.setWorkingDirectory(path)
         self.process.startDetached("xfce4-terminal", ["--geometry", "140x30+0+28", wd])
+
+    def startInTerminal(self):
+        index = self.listview.selectionModel().currentIndex()
+        path = self.fileModel.fileInfo(index).absoluteFilePath()
+        self.process.startDetached("xfce4-terminal", ["--geometry", "140x30+0+28", "-e", path])
 
     def createZipFromFolder(self):
         index = self.treeview.selectionModel().currentIndex()
@@ -466,6 +483,7 @@ class myWindow(QMainWindow):
             self.menu.addAction(self.cutAction) 
             self.menu.addAction(self.pasteAction) 
             self.menu.addAction(self.terminalAction) 
+            self.menu.addAction(self.startInTerminalAction) 
             self.menu.addAction(self.executableAction)
             self.menu.addSeparator()
             self.menu.addAction(self.delActionTrash) 
@@ -656,8 +674,6 @@ QPushButton:hover{
 background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 lightgreen, stop: 1  green);
 border-style: solid;
 border-color: darkgrey;
-height: 24px;
-width: 66px;
 border-width: 1px;
 border-radius: 4px;
 }
