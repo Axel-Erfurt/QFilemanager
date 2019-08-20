@@ -9,12 +9,13 @@
 ############################################
 import sys
 import os
-from subprocess import Popen
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.Qt import QKeySequence, QCursor, QDesktopServices
 import findFilesWindow
+import QTextEdit
+import Qt5Player
 from zipfile import ZipFile
 import shutil
 
@@ -216,7 +217,7 @@ class myWindow(QMainWindow):
         self.newWinAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.newWinAction) 
 
-        self.openActionText = QAction(QIcon.fromTheme("system-run"), "open File with Texteditor",  triggered=self.openFileText)
+        self.openActionText = QAction(QIcon.fromTheme("system-run"), "open File with built-in Texteditor",  triggered=self.openFileText)
         self.openActionText.setShortcut(QKeySequence(Qt.Key_F6))
         self.openActionText.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.openActionText) 
@@ -426,29 +427,18 @@ class myWindow(QMainWindow):
     def openFileText(self):
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).absoluteFilePath()
-        theApp = "/home/brian/myApps/TextEdit/QTextEdit"
-        if QFile.exists(theApp):
-            self.copyFile()
-            for files in self.copyList:
-                print("%s '%s'" % ("open file", files))
-                self.process.startDetached(theApp, [files])
-        else:
-            self.copyFile()
-            for files in self.copyList:
-                print("%s '%s'" % ("open file", files))
-                QDesktopServices.openUrl(QUrl(files, QUrl.TolerantMode | QUrl.EncodeUnicode))
+        self.texteditor = QTextEdit.MainWindow()
+        self.texteditor.show()
+        self.texteditor.loadFile(path)
 
     def playVLC(self):
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).filePath()
         self.statusBar().showMessage("%s '%s'" % ("file:", path))
-        myapp = "/home/brian/Dokumente/Qt5Player.py"
-        if QFile.exists(myapp):
-            self.process.startDetached("python3", [myapp, path])
-            print("%s '%s'" % ("playing", path))
-        else:
-            self.process.startDetached("cvlc", [path])
-            print("%s '%s'" % ("playing with vlc:", path))
+        self. player = Qt5Player.VideoPlayer('')
+        self.player.show()
+        self.player.loadFilm(path)
+        print("%s '%s'" % ("playing", path))
 
     def playMedia(self):
         index = self.listview.selectionModel().currentIndex()
@@ -506,6 +496,7 @@ class myWindow(QMainWindow):
             self.menu.addAction(self.refreshAction)
             self.menu.addAction(self.hiddenAction)
             self.menu.addAction(self.zipFilesAction)
+            self.menu.addSeparator()
             self.menu.addAction(self.helpAction) 
             self.menu.popup(QCursor.pos())
         else:
