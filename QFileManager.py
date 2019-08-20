@@ -1,12 +1,19 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+
+############################################
+## Copyright (C) 2013 Riverbank Computing Limited.
+## Copyright (C) 2010 Nokia Corporation and/or its subsidiary(-ies).
+## made by Axel Schneider * https://github.com/Axel-Erfurt/
+## August 2019
+############################################
 import sys
 import os
 from subprocess import Popen
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from PyQt5.QtGui import QIcon
-from PyQt5.Qt import QKeySequence, QCursor
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.Qt import QKeySequence, QCursor, QDesktopServices
 import findFilesWindow
 from zipfile import ZipFile
 import shutil
@@ -112,13 +119,16 @@ class myWindow(QMainWindow):
         self.treeview.hideColumn(1)
         self.treeview.hideColumn(2)
         self.treeview.hideColumn(3)
+
         self.listview.setModel(self.fileModel)
         self.treeview.setRootIsDecorated(True)
+
 #        self.listview.setSelectionBehavior (QAbstractItemView.SelectRows )
 #        self.listview.customContextMenuRequested.connect(self.contextMenuEvent)
         self.listview.header().resizeSection(0, 320)
         self.listview.header().resizeSection(1, 80)
         self.listview.header().resizeSection(2, 80)
+        self.listview.setSortingEnabled(True) 
 
         self.createActions()
 
@@ -146,6 +156,7 @@ class myWindow(QMainWindow):
         self.treeview.setAcceptDrops(True)
         self.treeview.setDropIndicatorShown(True)
         self.readSettings()
+        self.listview.sortByColumn(0, Qt.AscendingOrder)
 
     def closeEvent(self, e):
         self.writeSettings()
@@ -193,7 +204,7 @@ class myWindow(QMainWindow):
         self.openAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.openAction) 
 
-        self.newWinAction = QAction(QIcon.fromTheme("folder-open"), "open in new window",  triggered=self.openNewWin)
+        self.newWinAction = QAction(QIcon.fromTheme("folder-new"), "open in new window",  triggered=self.openNewWin)
         self.newWinAction.setShortcut(QKeySequence("Shift+Ctrl+n"))
         self.newWinAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.newWinAction) 
@@ -273,6 +284,29 @@ class myWindow(QMainWindow):
         self.helpAction.setShortcut(QKeySequence(Qt.Key_F1))
         self.helpAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.helpAction) 
+
+        self.terminalAction = QAction(QIcon.fromTheme("terminal"), "open folder in Terminal",  triggered=self.showInTerminal)
+        self.terminalAction.setShortcut(QKeySequence(Qt.Key_F7))
+        self.terminalAction.setShortcutVisibleInContextMenu(True)
+        self.treeview.addAction(self.terminalAction) 
+        self.listview.addAction(self.terminalAction) 
+
+        self.executableAction = QAction(QIcon.fromTheme("applications-utilities"), "make executable",  triggered=self.makeExecutable)
+        self.listview.addAction(self.executableAction) 
+
+    def makeExecutable(self):
+        index = self.listview.selectionModel().currentIndex()
+        path = self.fileModel.fileInfo(index).absoluteFilePath()
+        print("set", path, "executable")
+        self.process.execute("chmod", ["-+x", path])
+
+    def showInTerminal(self):
+        index = self.treeview.selectionModel().currentIndex()
+        path = self.dirModel.fileInfo(index).absoluteFilePath()
+        wd = "--working-directory=" + path
+        print(wd)
+#        self.process.setWorkingDirectory(path)
+        self.process.startDetached("xfce4-terminal", ["--geometry", "140x30+0+28", wd])
 
     def createZipFromFolder(self):
         index = self.treeview.selectionModel().currentIndex()
@@ -370,7 +404,7 @@ class myWindow(QMainWindow):
         self.copyFile()
         for files in self.copyList:
             print("%s '%s'" % ("open file", files))
-            self.process.startDetached("xdg-open",  [files])
+            QDesktopServices.openUrl(QUrl(files , QUrl.TolerantMode | QUrl.EncodeUnicode))
 
     def openFileText(self):
         index = self.listview.selectionModel().currentIndex()
@@ -385,7 +419,7 @@ class myWindow(QMainWindow):
             self.copyFile()
             for files in self.copyList:
                 print("%s '%s'" % ("open file", files))
-                self.process.startDetached("xdg-open", [files])
+                QDesktopServices.openUrl(QUrl(files, QUrl.TolerantMode | QUrl.EncodeUnicode))
 
     def playVLC(self):
         index = self.listview.selectionModel().currentIndex()
@@ -431,6 +465,8 @@ class myWindow(QMainWindow):
             self.menu.addAction(self.copyAction) 
             self.menu.addAction(self.cutAction) 
             self.menu.addAction(self.pasteAction) 
+            self.menu.addAction(self.terminalAction) 
+            self.menu.addAction(self.executableAction)
             self.menu.addSeparator()
             self.menu.addAction(self.delActionTrash) 
             self.menu.addAction(self.delAction) 
@@ -461,6 +497,7 @@ class myWindow(QMainWindow):
             self.menu = QMenu(self.treeview)
             if os.path.isdir(path):
                 self.menu.addAction(self.newWinAction)
+                self.menu.addAction(self.terminalAction) 
                 self.menu.addAction(self.findFilesAction)
                 self.menu.addAction(self.zipAction)
             self.menu.popup(QCursor.pos())
