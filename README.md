@@ -1,9 +1,5 @@
 # QFilemanager
 
-drag and drop Files
-open, copy, cut, paste, rename Files
-create zip from selected Files or from Folder
-
 ### Requirements:
 
 - python 3
@@ -22,7 +18,7 @@ create zip from selected Files or from Folder
 - paste File(s) (Ctrl-V)
 - cut File(s) (Ctrl-X)
 - open with built-in TextEditor (F6)
-- move File(s) to Trash(Del)
+- move File(s) to Trash (Del)
 - delete File(s) (Shift+Del)
 - find File(s) (Ctrl-F)
 - play with vlc
