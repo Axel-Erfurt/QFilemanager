@@ -1,5 +1,7 @@
 # QFilemanager
 
+made in Linux Mint 19
+
 ### Requirements:
 
 - python 3
