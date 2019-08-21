@@ -18,6 +18,7 @@ import QTextEdit
 import Qt5Player
 from zipfile import ZipFile
 import shutil
+import subprocess
 
 class helpWindow(QMainWindow):
     def __init__(self):
@@ -89,6 +90,7 @@ class myWindow(QMainWindow):
         self.process = QProcess()
 
         self.settings = QSettings("QFileManager", "QFileManager")
+        self.clip = QApplication.clipboard()
 
         self.treeview = QTreeView()
         self.listview = QTreeView()
@@ -307,11 +309,22 @@ class myWindow(QMainWindow):
         self.executableAction = QAction(QIcon.fromTheme("applications-utilities"), "make executable",  triggered=self.makeExecutable)
         self.listview.addAction(self.executableAction) 
 
+    def checkIsApplication(self, path):
+        st = subprocess.check_output("file '" + path + "'", stderr=subprocess.STDOUT, universal_newlines=True, shell=True)
+        print(st)
+        if "LSB executable" in st:
+            print(path, "is application")
+            return True
+        else:
+            print(path, "is no application")
+            return False
+
     def makeExecutable(self):
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).absoluteFilePath()
         print("set", path, "executable")
-        self.process.execute("chmod", ["-+x", path])
+#        self.process.execute("chmod", ["-+x", path])
+        os.chmod(path, st.st_mode | stat.S_IEXEC)
 
     def showInTerminal(self):
         index = self.treeview.selectionModel().currentIndex()
@@ -422,7 +435,10 @@ class myWindow(QMainWindow):
         self.copyFile()
         for files in self.copyList:
             print("%s '%s'" % ("open file", files))
-            QDesktopServices.openUrl(QUrl(files , QUrl.TolerantMode | QUrl.EncodeUnicode))
+            if self.checkIsApplication(path) == True:
+                self.process.startDetached(files)
+            else:
+                QDesktopServices.openUrl(QUrl(files , QUrl.TolerantMode | QUrl.EncodeUnicode))
 
     def openFileText(self):
         index = self.listview.selectionModel().currentIndex()
@@ -450,7 +466,10 @@ class myWindow(QMainWindow):
     def list_doubleClicked(self):
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).absoluteFilePath()
-        QDesktopServices.openUrl(QUrl(path , QUrl.TolerantMode | QUrl.EncodeUnicode))
+        if self.checkIsApplication(path) == True:
+            self.process.startDetached(path)
+        else:
+            QDesktopServices.openUrl(QUrl(path , QUrl.TolerantMode | QUrl.EncodeUnicode))
 
     def infobox(self, message):
         title = "QFilemager"
@@ -517,11 +536,15 @@ class myWindow(QMainWindow):
 
     def copyFile(self):
         self.copyList = []
-        selected = self.listview.selectionModel().selectedIndexes()
+        selected = self.listview.selectionModel().selectedRows()
+        count = len(selected)
+#        print("count:", count)
         for index in selected:
-            if index.column() == 0:
-                self.copyList.append(self.currentPath + "/" + self.fileModel.data(index,
-                    self.fileModel.FileNameRole))
+            path = self.currentPath + "/" + self.fileModel.data(index,self.fileModel.FileNameRole)
+            print(path, "copied to clipboard")
+            self.copyList.append(path)
+            self.clip.setText(path, 1)
+#        print(len(self.copyList))
         print("%s\n%s" % ("filepath(s) copied:", '\n'.join(self.copyList)))
 
     def pasteFile(self):
