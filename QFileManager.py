@@ -16,6 +16,7 @@ from PyQt5.Qt import QKeySequence, QCursor, QDesktopServices
 import findFilesWindow
 import QTextEdit
 import Qt5Player
+import QImageViewer
 from zipfile import ZipFile
 import shutil
 import subprocess
@@ -255,6 +256,9 @@ class myWindow(QMainWindow):
         self.delActionTrash.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.delActionTrash) 
 
+        self.imageAction = QAction(QIcon.fromTheme("image-x-generic"), "show Image",  triggered=self.showImage)
+        self.listview.addAction(self.imageAction) 
+
         self.findFilesAction = QAction(QIcon.fromTheme("edit-find"), "find in folder",  triggered=self.findFiles)
         self.findFilesAction.setShortcut(QKeySequence("Ctrl+f"))
         self.findFilesAction.setShortcutVisibleInContextMenu(True)
@@ -309,6 +313,15 @@ class myWindow(QMainWindow):
 
         self.executableAction = QAction(QIcon.fromTheme("applications-utilities"), "make executable",  triggered=self.makeExecutable)
         self.listview.addAction(self.executableAction) 
+
+    def showImage(self):
+        index = self.listview.selectionModel().currentIndex()
+        path = self.fileModel.fileInfo(index).absoluteFilePath()
+        print("show image: ", path)
+        self.win = QImageViewer.ImageViewer()
+        self.win.show()
+        self.win.filename = path
+        self.win.loadFile(path)
 
     def checkIsApplication(self, path):
         st = subprocess.check_output("file '" + path + "'", stderr=subprocess.STDOUT, universal_newlines=True, shell=True)
@@ -496,6 +509,10 @@ class myWindow(QMainWindow):
             self.menu.addAction(self.terminalAction) 
             self.menu.addAction(self.startInTerminalAction) 
             self.menu.addAction(self.executableAction)
+            image_extension = [".png", "jpg", ".jpeg", ".bmp", "tif", ".tiff", ".pnm", ".svg", ".exif", ".gif"]
+            for ext in image_extension:
+                if ext in path:
+                    self.menu.addAction(self.imageAction)
             self.menu.addSeparator()
             self.menu.addAction(self.delActionTrash) 
             self.menu.addAction(self.delAction) 
