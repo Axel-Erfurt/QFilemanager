@@ -17,7 +17,7 @@ import findFilesWindow
 import QTextEdit
 import Qt5Player
 import QImageViewer
-#import DBViewer
+import QWebViewer
 from zipfile import ZipFile
 import shutil
 import subprocess
@@ -27,14 +27,7 @@ class helpWindow(QMainWindow):
     def __init__(self):
         super(helpWindow, self).__init__()
         self.setStyleSheet(mystylesheet(myWindow()))
-        self.helpText ="""<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><!--StartFragment--><span style=" font-family:'Helvetica'; font-size:11pt; font-weight:600; text-decoration: underline; color:#2e3436;">Features:</span></p>
-<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">drag and drop Files to copy (SHIFT to move)</span></p>
-<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">open Files with default app</span></p>
-<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">create zip from Folder</span></p>
-<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">create zip from selected File(s)</span></p>
-<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">show/hide hidden File(s)</span></p>
-<p style="-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Helvetica'; font-size:9pt; color:#2e3436;"><br /></p>
-<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:11pt; font-weight:600; text-decoration: underline; color:#2e3436;">Shortcuts:</span></p>
+        self.helpText ="""<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><!--StartFragment--><span style=" font-family:'Helvetica'; font-size:11pt; font-weight:600; text-decoration: underline; color:#2e3436;">Shortcuts:</span></p>
 <p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">rename File (F2)</span></p>
 <p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">copy File(s) (Ctrl-C)</span></p>
 <p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">paste File(s) (Ctrl-V)</span></p>
@@ -56,7 +49,6 @@ class helpWindow(QMainWindow):
 
         widget = QWidget(self)
         layout = QVBoxLayout(widget)
-#        layout.setAlignment(Qt.AlignCenter)
 
         layout.addWidget(self.helpViewer)
         layout.addStretch()
@@ -65,7 +57,7 @@ class helpWindow(QMainWindow):
 
         self.setWindowTitle("Help")
         self.setWindowIcon(QIcon.fromTheme("help-about"))
-        self.setGeometry(0, 26, 600, 420)
+        self.setGeometry(0, 26, 240, 270)
 
     def aboutApp(self):
         sysinfo = QSysInfo()
@@ -165,7 +157,6 @@ class myWindow(QMainWindow):
         self.listview.setEditTriggers(QAbstractItemView.SelectedClicked)
 
         self.treeview.setDragDropMode(QAbstractItemView.DropOnly)
-#        self.treeview.setDragEnabled(True)
         self.treeview.setAcceptDrops(True)
         self.treeview.setDropIndicatorShown(True)
         self.readSettings()
@@ -211,6 +202,7 @@ class myWindow(QMainWindow):
             print("open '", path, "' in new window")
             self.process.startDetached("python3", [theApp, path])
 
+    ### actions
     def createActions(self):
         self.openAction = QAction(QIcon.fromTheme("system-run"), "open File",  triggered=self.openFile)
         self.openAction.setShortcut(QKeySequence(Qt.Key_Return))
@@ -260,8 +252,17 @@ class myWindow(QMainWindow):
         self.imageAction = QAction(QIcon.fromTheme("image-x-generic"), "show Image",  triggered=self.showImage)
         self.listview.addAction(self.imageAction) 
 
+        self.urlAction = QAction(QIcon.fromTheme("browser"), "preview Page",  triggered=self.showURL)
+        self.listview.addAction(self.urlAction) 
+
         self.dbAction = QAction(QIcon.fromTheme("image-x-generic"), "show Database",  triggered=self.showDB)
         self.listview.addAction(self.dbAction) 
+
+        self.py2Action = QAction(QIcon.fromTheme("python"), "run in python",  triggered=self.runPy2)
+        self.listview.addAction(self.py2Action) 
+
+        self.py3Action = QAction(QIcon.fromTheme("python3"), "run in python3",  triggered=self.runPy3)
+        self.listview.addAction(self.py3Action) 
 
         self.findFilesAction = QAction(QIcon.fromTheme("edit-find"), "find in folder",  triggered=self.findFiles)
         self.findFilesAction.setShortcut(QKeySequence("Ctrl+f"))
@@ -490,6 +491,13 @@ class myWindow(QMainWindow):
         self.process.startDetached("cvlc", [path])
         print("%s '%s'" % ("playing with vlc:", path))
 
+    def showURL(self):
+        index = self.listview.selectionModel().currentIndex()
+        path = self.fileModel.fileInfo(index).absoluteFilePath()
+        self.webview = QWebViewer.MainWindow()
+        self.webview.show()
+        self.webview.load_url(path)
+
     def list_doubleClicked(self):
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).absoluteFilePath()
@@ -526,7 +534,15 @@ class myWindow(QMainWindow):
             for ext in db_extension:
                 if ext in path:
                     self.menu.addAction(self.dbAction)
-
+            ### html viewer
+            url_extension = [".htm", "html"]
+            for ext in url_extension:
+                if ext in path:
+                    self.menu.addAction(self.urlAction)
+            ### run in python
+            if path.endswith(".py"):
+                self.menu.addAction(self.py2Action)
+                self.menu.addAction(self.py3Action)
             ### image viewer
             image_extension = [".png", "jpg", ".jpeg", ".bmp", "tif", ".tiff", ".pnm", ".svg", 
                                                 ".exif", ".gif"]
@@ -570,6 +586,19 @@ class myWindow(QMainWindow):
                 self.menu.addAction(self.findFilesAction)
                 self.menu.addAction(self.zipAction)
             self.menu.popup(QCursor.pos())
+
+    def runPy2(self):
+            index = self.listview.selectionModel().currentIndex()
+            path = self.fileModel.fileInfo(index).absoluteFilePath()    
+            self.process.startDetached("python", [path])
+
+    def runPy3(self):
+            index = self.listview.selectionModel().currentIndex()
+            path = self.fileModel.fileInfo(index).absoluteFilePath()   
+            error = QProcess.error(self.process)
+            self.process.startDetached("python3", [path])
+            if self.process.errorOccurred():
+                self.infobox(error)
 
     def renameFile(self):
         index = self.listview.selectionModel().currentIndex()
@@ -744,5 +773,4 @@ if __name__ == '__main__':
         w.listview.setRootIndex(w.fileModel.setRootPath(path))
         w.treeview.setRootIndex(w.dirModel.setRootPath(path))
         w.setWindowTitle(path)
-    sys.exit(app.exec_())
-    
+    sys.exit(app.exec_())   
