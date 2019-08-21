@@ -13,7 +13,10 @@ made in Linux Mint 19
 - create zip from Folder
 - create zip from selected File(s)
 - show/hide hidden File(s)
+- show Text in built-in Texteditor
 - show Image in built-in Image Viewer
+- show Databas in built-in DB-Viewer
+- play Videos in built-in Player (frameless Window, see Player context menu)
 
 ### Shortcuts:
 - rename File (F2)
