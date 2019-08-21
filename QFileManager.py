@@ -19,6 +19,7 @@ import Qt5Player
 from zipfile import ZipFile
 import shutil
 import subprocess
+import stat
 
 class helpWindow(QMainWindow):
     def __init__(self):
@@ -324,6 +325,7 @@ class myWindow(QMainWindow):
         path = self.fileModel.fileInfo(index).absoluteFilePath()
         print("set", path, "executable")
 #        self.process.execute("chmod", ["-+x", path])
+        st = os.stat(path)
         os.chmod(path, st.st_mode | stat.S_IEXEC)
 
     def showInTerminal(self):
