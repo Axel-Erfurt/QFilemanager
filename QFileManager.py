@@ -509,7 +509,8 @@ class myWindow(QMainWindow):
             self.menu.addAction(self.terminalAction) 
             self.menu.addAction(self.startInTerminalAction) 
             self.menu.addAction(self.executableAction)
-            image_extension = [".png", "jpg", ".jpeg", ".bmp", "tif", ".tiff", ".pnm", ".svg", ".exif", ".gif"]
+            image_extension = [".png", "jpg", ".jpeg", ".bmp", "tif", ".tiff", ".pnm", ".svg", 
+                                                ".exif", ".gif", ".PNG", "JPG", ".JPEG", ".BMP", "TIF", ".TIFF", ".PNM", ".SVG", ".EXIF", ".GIF"]
             for ext in image_extension:
                 if ext in path:
                     self.menu.addAction(self.imageAction)
