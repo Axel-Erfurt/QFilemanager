@@ -13,6 +13,7 @@ made in Linux Mint 19
 - create zip from Folder
 - create zip from selected File(s)
 - show/hide hidden File(s)
+- show Image in built-in Image Viewer
 
 ### Shortcuts:
 - rename File (F2)
