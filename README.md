@@ -15,6 +15,7 @@ made in Linux Mint 19
 - show/hide hidden File(s)
 - show Text in built-in Texteditor
 - show Image in built-in Image Viewer
+- show html Files in built-in HTML Viewer
 - show Database in built-in DB-Viewer
 - play Videos in built-in Player (frameless Window, see Player context menu)
 
