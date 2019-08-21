@@ -17,6 +17,7 @@ import findFilesWindow
 import QTextEdit
 import Qt5Player
 import QImageViewer
+#import DBViewer
 from zipfile import ZipFile
 import shutil
 import subprocess
@@ -259,6 +260,9 @@ class myWindow(QMainWindow):
         self.imageAction = QAction(QIcon.fromTheme("image-x-generic"), "show Image",  triggered=self.showImage)
         self.listview.addAction(self.imageAction) 
 
+        self.dbAction = QAction(QIcon.fromTheme("image-x-generic"), "show Database",  triggered=self.showDB)
+        self.listview.addAction(self.dbAction) 
+
         self.findFilesAction = QAction(QIcon.fromTheme("edit-find"), "find in folder",  triggered=self.findFiles)
         self.findFilesAction.setShortcut(QKeySequence("Ctrl+f"))
         self.findFilesAction.setShortcutVisibleInContextMenu(True)
@@ -270,13 +274,13 @@ class myWindow(QMainWindow):
         self.zipFilesAction = QAction(QIcon.fromTheme("zip"), "create zip from selected files",  triggered=self.createZipFromFiles)
         self.listview.addAction(self.zipFilesAction) 
 
-        self.playAction = QAction(QIcon.fromTheme("multimedia-player"), "play with Qt5Player",  triggered=self.playVLC)
+        self.playAction = QAction(QIcon.fromTheme("multimedia-player"), "play with Qt5Player",  triggered=self.playInternal)
         self.playAction.setShortcut(QKeySequence(Qt.Key_F3))
         self.playAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.playAction) 
 
-        self.playVLCAction = QAction(QIcon.fromTheme("vlc"), "play with vlc",  triggered=self.playMedia)
-        self.listview.addAction(self.playVLCAction) 
+        self.playInternalAction = QAction(QIcon.fromTheme("vlc"), "play with vlc",  triggered=self.playMedia)
+        self.listview.addAction(self.playInternalAction) 
 
         self.mp3Action = QAction(QIcon.fromTheme("audio-x-generic"), "convert to mp3",  triggered=self.makeMP3)
         self.listview.addAction(self.mp3Action) 
@@ -323,6 +327,15 @@ class myWindow(QMainWindow):
         self.win.filename = path
         self.win.loadFile(path)
 
+    def showDB(self):
+        import DBViewer
+        index = self.listview.selectionModel().currentIndex()
+        path = self.fileModel.fileInfo(index).absoluteFilePath()
+        print("show image: ", path)
+        self.db_win = DBViewer.MyWindow()
+        self.db_win.show()
+        self.db_win.fileOpenStartup(path)
+
     def checkIsApplication(self, path):
         st = subprocess.check_output("file '" + path + "'", stderr=subprocess.STDOUT, universal_newlines=True, shell=True)
         print(st)
@@ -330,7 +343,6 @@ class myWindow(QMainWindow):
             print(path, "is application")
             return True
         else:
-            print(path, "is no application")
             return False
 
     def makeExecutable(self):
@@ -462,7 +474,7 @@ class myWindow(QMainWindow):
         self.texteditor.show()
         self.texteditor.loadFile(path)
 
-    def playVLC(self):
+    def playInternal(self):
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).filePath()
         self.statusBar().showMessage("%s '%s'" % ("file:", path))
@@ -509,25 +521,34 @@ class myWindow(QMainWindow):
             self.menu.addAction(self.terminalAction) 
             self.menu.addAction(self.startInTerminalAction) 
             self.menu.addAction(self.executableAction)
-            image_extension = [".png", "jpg", ".jpeg", ".bmp", "tif", ".tiff", ".pnm", ".svg", 
-                                                ".exif", ".gif", ".PNG", "JPG", ".JPEG", ".BMP", "TIF", ".TIFF", ".PNM", ".SVG", ".EXIF", ".GIF"]
-            for ext in image_extension:
+            ### database viewer
+            db_extension = [".sql", "db", "sqlite", "sqlite3", ".SQL", "DB", "SQLITE", "SQLITE3"]
+            for ext in db_extension:
                 if ext in path:
+                    self.menu.addAction(self.dbAction)
+
+            ### image viewer
+            image_extension = [".png", "jpg", ".jpeg", ".bmp", "tif", ".tiff", ".pnm", ".svg", 
+                                                ".exif", ".gif"]
+            for ext in image_extension:
+                if ext in path or ext.upper() in path:
                     self.menu.addAction(self.imageAction)
             self.menu.addSeparator()
             self.menu.addAction(self.delActionTrash) 
             self.menu.addAction(self.delAction) 
             self.menu.addSeparator()
-            extensions = [".mp3", ".mp4", "mpg", ".m4a", ".mpeg", "avi", ".mkv", ".webm", ".wav", ".ogg", ".flv ", ".vob", ".ogv", ".ts", ".m2v", "m4v", "3gp", ".f4v"]
+            extensions = [".mp3", ".mp4", "mpg", ".m4a", ".mpeg", "avi", ".mkv", ".webm", 
+                                    ".wav", ".ogg", ".flv ", ".vob", ".ogv", ".ts", ".m2v", "m4v", "3gp", ".f4v"]
             for ext in extensions:
-                if ext in path:
+                if ext in path or ext.upper() in path:
                     self.menu.addSeparator()
                     self.menu.addAction(self.playAction) 
-                    self.menu.addAction(self.playVLCAction) 
+                    self.menu.addAction(self.playInternalAction) 
                     self.menu.addSeparator()
-            extensions = [".mp4", "mpg", ".m4a", ".mpeg", "avi", ".mkv", ".webm", ".wav", ".ogg", ".flv ", ".vob", ".ogv", ".ts", ".m2v", "m4v", "3gp", ".f4v"]
+            extensions = [".mp4", "mpg", ".m4a", ".mpeg", "avi", ".mkv", ".webm", 
+                                    ".wav", ".ogg", ".flv ", ".vob", ".ogv", ".ts", ".m2v", "m4v", "3gp", ".f4v"]
             for ext in extensions:
-                if ext in path:
+                if ext in path or ext.upper() in path:
                     self.menu.addAction(self.mp3Action) 
                     self.menu.addSeparator()
             if ".mp3" in path:
@@ -724,3 +745,4 @@ if __name__ == '__main__':
         w.treeview.setRootIndex(w.dirModel.setRootPath(path))
         w.setWindowTitle(path)
     sys.exit(app.exec_())
+    
