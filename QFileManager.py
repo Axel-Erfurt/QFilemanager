@@ -22,6 +22,7 @@ from zipfile import ZipFile
 import shutil
 import subprocess
 import stat
+from send2trash import send2trash
 
 class helpWindow(QMainWindow):
     def __init__(self):
@@ -112,9 +113,9 @@ class myWindow(QMainWindow):
         self.copyList = []
 
         self.dirModel = QFileSystemModel()
-        self.dirModel.setReadOnly(True)
-        self.dirModel.setRootPath(QDir.rootPath())
+        self.dirModel.setReadOnly(False)
         self.dirModel.setFilter(QDir.NoDotAndDotDot | QDir.AllDirs | QDir.Drives)
+        self.dirModel.setRootPath(QDir.rootPath())
 
         self.fileModel = QFileSystemModel()
         self.fileModel.setReadOnly(False)
@@ -156,43 +157,55 @@ class myWindow(QMainWindow):
         self.listview.setDropIndicatorShown(True)
         self.listview.setEditTriggers(QAbstractItemView.SelectedClicked)
 
-        self.treeview.setDragDropMode(QAbstractItemView.DropOnly)
+        self.treeview.setDragDropMode(QAbstractItemView.DragDrop)
+        self.treeview.setDragEnabled(True)
         self.treeview.setAcceptDrops(True)
         self.treeview.setDropIndicatorShown(True)
-        self.readSettings()
         self.listview.sortByColumn(0, Qt.AscendingOrder)
+        print("Welcome to QFileManager")
+        self.readSettings()
+        self.enableHidden()
 
     def closeEvent(self, e):
+        print("writing settings ...\nGoodbye ...")
         self.writeSettings()
 
     def readSettings(self):
-        if self.settings.value("pos") != "":
+        print("reading settings ...")
+        if self.settings.contains("pos"):
             pos = self.settings.value("pos", QPoint(200, 200))
             self.move(pos)
         else:
             self.move(0, 26)
-        if self.settings.value("size") != "":
-            size = self.settings.value("size", QSize(400, 400))
+        if self.settings.contains("size"):
+            size = self.settings.value("size", QSize(800, 600))
             self.resize(size)
         else:
             self.resize(800, 600)
+        if self.settings.contains("hiddenEnabled"):
+            if self.settings.value("hiddenEnabled") == "false":
+                self.hiddenEnabled = True
+            else:
+                self.hiddenEnabled = False
 
     def writeSettings(self):
         self.settings.setValue("pos", self.pos())
         self.settings.setValue("size", self.size())
+        self.settings.setValue("hiddenEnabled", self.hiddenEnabled,)
 
     def enableHidden(self):
-        print("toggle hidden files")
         if self.hiddenEnabled == False:
             self.fileModel.setFilter(QDir.NoDotAndDotDot | QDir.Hidden | QDir.Files)
             self.dirModel.setFilter(QDir.NoDotAndDotDot | QDir.Hidden | QDir.AllDirs)
             self.hiddenEnabled = True
             self.hiddenAction.setChecked(True)
+            print("toggled hidden files to true")
         else:
             self.fileModel.setFilter(QDir.NoDotAndDotDot | QDir.Files)
             self.dirModel.setFilter(QDir.NoDotAndDotDot | QDir.AllDirs)
             self.hiddenEnabled = False
             self.hiddenAction.setChecked(False)
+            print("toggled hidden files to false")
 
     def openNewWin(self):
         index = self.treeview.selectionModel().currentIndex()
@@ -224,6 +237,9 @@ class myWindow(QMainWindow):
         self.renameAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.renameAction) 
 
+        self.renameFolderAction = QAction(QIcon.fromTheme("accessories-text-editor"), "rename File",  triggered=self.renameFolder) 
+        self.treeview.addAction(self.renameFolderAction) 
+
         self.copyAction = QAction(QIcon.fromTheme("edit-copy"), "copy File(s)",  triggered=self.copyFile) 
         self.copyAction.setShortcut(QKeySequence("Ctrl+c"))
         self.copyAction.setShortcutVisibleInContextMenu(True)
@@ -239,10 +255,13 @@ class myWindow(QMainWindow):
         self.pasteAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.pasteAction) 
 
-        self.delAction = QAction(QIcon.fromTheme("edit-delete"), "delete File",  triggered=self.deleteFile)
+        self.delAction = QAction(QIcon.fromTheme("edit-delete"), "delete File(s)",  triggered=self.deleteFile)
         self.delAction.setShortcut(QKeySequence("Shift+Del"))
         self.delAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.delAction) 
+
+        self.delFolderAction = QAction(QIcon.fromTheme("edit-delete"), "delete Folder",  triggered=self.deleteFolder)
+        self.treeview.addAction(self.delFolderAction) 
 
         self.delActionTrash = QAction(QIcon.fromTheme("user-trash"), "move to trash",  triggered=self.deleteFileTrash)
         self.delActionTrash.setShortcut(QKeySequence("Del"))
@@ -275,6 +294,12 @@ class myWindow(QMainWindow):
         self.zipFilesAction = QAction(QIcon.fromTheme("zip"), "create zip from selected files",  triggered=self.createZipFromFiles)
         self.listview.addAction(self.zipFilesAction) 
 
+        self.unzipHereAction = QAction(QIcon.fromTheme("application-zip"), "extract here ...",  triggered=self.unzipHere)
+        self.listview.addAction(self.unzipHereAction) 
+
+        self.unzipToAction = QAction(QIcon.fromTheme("application-zip"), "extract to ...",  triggered=self.unzipTo)
+        self.listview.addAction(self.unzipToAction) 
+
         self.playAction = QAction(QIcon.fromTheme("multimedia-player"), "play with Qt5Player",  triggered=self.playInternal)
         self.playAction.setShortcut(QKeySequence(Qt.Key_F3))
         self.playAction.setShortcutVisibleInContextMenu(True)
@@ -286,7 +311,7 @@ class myWindow(QMainWindow):
         self.mp3Action = QAction(QIcon.fromTheme("audio-x-generic"), "convert to mp3",  triggered=self.makeMP3)
         self.listview.addAction(self.mp3Action) 
 
-        self.playlistAction = QAction(QIcon.fromTheme("audio-x-generic"), "make playlist",  triggered=self.makePlaylist)
+        self.playlistAction = QAction(QIcon.fromTheme("audio-x-generic"), "make playlist from all mp3 files",  triggered=self.makePlaylist)
         self.listview.addAction(self.playlistAction)
 
         self.refreshAction = QAction(QIcon.fromTheme("view-refresh"), "refresh View",  triggered=self.refreshList)
@@ -319,6 +344,9 @@ class myWindow(QMainWindow):
         self.executableAction = QAction(QIcon.fromTheme("applications-utilities"), "make executable",  triggered=self.makeExecutable)
         self.listview.addAction(self.executableAction) 
 
+        self.createFolderAction = QAction(QIcon.fromTheme("folder-new"), "create new Folder",  triggered=self.createNewFolder)
+        self.treeview.addAction(self.createFolderAction) 
+
     def showImage(self):
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).absoluteFilePath()
@@ -338,10 +366,10 @@ class myWindow(QMainWindow):
         self.db_win.fileOpenStartup(path)
 
     def checkIsApplication(self, path):
-        st = subprocess.check_output("file '" + path + "'", stderr=subprocess.STDOUT, universal_newlines=True, shell=True)
+        st = subprocess.check_output("file  --mime-type '" + path + "'", stderr=subprocess.STDOUT, universal_newlines=True, shell=True)
         print(st)
-        if "LSB executable" in st:
-            print(path, "is application")
+        if "application/x-executable" in st:
+            print(path, "is an application")
             return True
         else:
             return False
@@ -350,7 +378,6 @@ class myWindow(QMainWindow):
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).absoluteFilePath()
         print("set", path, "executable")
-#        self.process.execute("chmod", ["-+x", path])
         st = os.stat(path)
         os.chmod(path, st.st_mode | stat.S_IEXEC)
 
@@ -359,8 +386,8 @@ class myWindow(QMainWindow):
         path = self.dirModel.fileInfo(index).absoluteFilePath()
         wd = "--working-directory=" + path
         print(wd)
-#        self.process.setWorkingDirectory(path)
         self.process.startDetached("xfce4-terminal", ["--geometry", "140x30+0+28", wd])
+#        subprocess.call(["xfce4-terminal", "--geometry", "140x30+0+28", wd])
 
     def startInTerminal(self):
         index = self.listview.selectionModel().currentIndex()
@@ -390,6 +417,23 @@ class myWindow(QMainWindow):
                 for file in self.copyList:
                     fname = os.path.basename(file)
                     myzip.write(file, fname)
+
+    def unzipHere(self):
+        file_index = self.listview.selectionModel().currentIndex()
+        file_path = self.fileModel.fileInfo(file_index).filePath()
+        folder_index = self.treeview.selectionModel().currentIndex()
+        folder_path = self.dirModel.fileInfo(folder_index).filePath()
+        with ZipFile(file_path, 'r') as zipObj:
+           # Extract zip file in current directory
+           zipObj.extractall(folder_path)
+
+    def unzipTo(self):
+        file_index = self.listview.selectionModel().currentIndex()
+        file_path = self.fileModel.fileInfo(file_index).filePath()
+        dirpath = QFileDialog.getExistingDirectory(self, "selectFolder", QDir.homePath(),  QFileDialog.ShowDirsOnly)
+        if dirpath:
+            with ZipFile(file_path, 'r') as zipObj:
+               zipObj.extractall(dirpath)
 
     def findFiles(self):
         index = self.treeview.selectionModel().currentIndex()
@@ -422,7 +466,8 @@ class myWindow(QMainWindow):
         foldername = self.dirModel.fileInfo(index).fileName()
 
         path = self.currentPath + "/" + foldername + ".m3u"
-        self.process.execute("touch", [path])
+        pl = QFile(path)
+        pl.open(QIODevice.ReadWrite | QIODevice.Truncate)
         mp3List = []
         
         for name in os.listdir(self.currentPath):
@@ -452,7 +497,6 @@ class myWindow(QMainWindow):
     def on_selectionChanged(self):
         index = self.treeview.selectionModel().currentIndex()
         path = self.dirModel.fileInfo(index).absoluteFilePath()
-#        self.statusBar().showMessage("%s %s" % ("selected folder:", path))
         self.listview.setRootIndex(self.fileModel.setRootPath(path))
         self.currentPath = path
         self.setWindowTitle(path)
@@ -501,10 +545,11 @@ class myWindow(QMainWindow):
     def list_doubleClicked(self):
         index = self.listview.selectionModel().currentIndex()
         path = self.fileModel.fileInfo(index).absoluteFilePath()
-        if self.checkIsApplication(path) == True:
-            self.process.startDetached(path)
-        else:
-            QDesktopServices.openUrl(QUrl(path , QUrl.TolerantMode | QUrl.EncodeUnicode))
+        if not self.fileModel.fileInfo(index).isDir():
+            if self.checkIsApplication(path) == True:
+                self.process.startDetached(path)
+            else:
+                QDesktopServices.openUrl(QUrl(path , QUrl.TolerantMode | QUrl.EncodeUnicode))
 
     def infobox(self, message):
         title = "QFilemager"
@@ -515,6 +560,7 @@ class myWindow(QMainWindow):
         path = self.fileModel.fileInfo(index).absoluteFilePath()
         self.menu = QMenu(self.listview)
         if self.listview.hasFocus():
+            self.menu.addAction(self.createFolderAction)
             self.menu.addAction(self.openAction)
             self.menu.addAction(self.openActionText)
             self.menu.addSeparator()
@@ -535,7 +581,7 @@ class myWindow(QMainWindow):
                 if ext in path:
                     self.menu.addAction(self.dbAction)
             ### html viewer
-            url_extension = [".htm", "html"]
+            url_extension = [".htm", ".html"]
             for ext in url_extension:
                 if ext in path:
                     self.menu.addAction(self.urlAction)
@@ -572,20 +618,36 @@ class myWindow(QMainWindow):
             self.menu.addAction(self.refreshAction)
             self.menu.addAction(self.hiddenAction)
             self.menu.addAction(self.zipFilesAction)
+            zip_extension = [".zip", ".tar.gz"]
+            for ext in zip_extension:
+                if ext in path:
+                    self.menu.addAction(self.unzipHereAction)
+                    self.menu.addAction(self.unzipToAction)
             self.menu.addSeparator()
             self.menu.addAction(self.helpAction) 
             self.menu.popup(QCursor.pos())
         else:
             index = self.treeview.selectionModel().currentIndex()
             path = self.dirModel.fileInfo(index).absoluteFilePath()
-            print("context:", path)
+            print("current path is:", path)
             self.menu = QMenu(self.treeview)
             if os.path.isdir(path):
                 self.menu.addAction(self.newWinAction)
+                self.menu.addAction(self.createFolderAction)
+                self.menu.addAction(self.renameFolderAction)
+                self.menu.addAction(self.delFolderAction)
                 self.menu.addAction(self.terminalAction) 
                 self.menu.addAction(self.findFilesAction)
                 self.menu.addAction(self.zipAction)
             self.menu.popup(QCursor.pos())
+
+    def createNewFolder(self):
+        index = self.treeview.selectionModel().currentIndex()
+        path = self.dirModel.fileInfo(index).absoluteFilePath()
+        dlg = QInputDialog(self)
+        foldername, ok = dlg.getText(self, 'Folder Name', "Folder Name:", QLineEdit.Normal, "", Qt.Dialog)
+        if ok:
+            success = QDir(path).mkdir(foldername)
 
     def runPy2(self):
             index = self.listview.selectionModel().currentIndex()
@@ -604,33 +666,48 @@ class myWindow(QMainWindow):
         index = self.listview.selectionModel().currentIndex()
         self.listview.edit(index)
 
+    def renameFolder(self):
+        index = self.treeview.selectionModel().currentIndex()
+        self.treeview.edit(index)
+
     def copyFile(self):
         self.copyList = []
         selected = self.listview.selectionModel().selectedRows()
         count = len(selected)
-#        print("count:", count)
         for index in selected:
             path = self.currentPath + "/" + self.fileModel.data(index,self.fileModel.FileNameRole)
             print(path, "copied to clipboard")
             self.copyList.append(path)
             self.clip.setText(path, 1)
-#        print(len(self.copyList))
         print("%s\n%s" % ("filepath(s) copied:", '\n'.join(self.copyList)))
 
     def pasteFile(self):
         index = self.treeview.selectionModel().currentIndex()
+        file_index = self.listview.selectionModel().currentIndex()
         for target in self.copyList:
             print(target)
-            destination = self.dirModel.fileInfo(index).absoluteFilePath()
+            destination = self.dirModel.fileInfo(index).absoluteFilePath() + "/" + QFileInfo(target).fileName()
             print("%s %s" % ("pasted File to", destination))
-            self.process.execute("cp", [target, destination])
+            QFile.copy(target, destination)
             if self.cut == True:
-                self.process.execute("rm", [target])
+                QFile.remove(target)
             self.cut == False
 
     def cutFile(self):
         self.cut = True
         self.copyFile()
+
+    def deleteFolder(self):
+        index = self.treeview.selectionModel().currentIndex()
+        delFolder  = self.dirModel.fileInfo(index).absoluteFilePath()
+        msg = QMessageBox.question(self, "Info", "Caution!\nReally delete this Folder?\n" + delFolder, QMessageBox.Yes | QMessageBox.No)
+        if msg == QMessageBox.Yes:
+            print('Deletion confirmed.')
+            self.statusBar().showMessage("%s %s" % ("folder deleted", delFolder), 0)
+            self.fileModel.remove(index)
+            print("%s %s" % ("folder deleted", delFolder))
+        else:
+            print('No clicked.')
         
     def deleteFile(self):
         self.copyFile()
@@ -640,6 +717,7 @@ class myWindow(QMainWindow):
             index = self.listview.selectionModel().currentIndex()
             self.copyPath = self.fileModel.fileInfo(index).absoluteFilePath()
             print("%s %s" % ("file deleted", self.copyPath))
+            self.statusBar().showMessage("%s %s" % ("file deleted", self.copyPath), 0)
             for delFile in self.listview.selectionModel().selectedIndexes():
                 self.fileModel.remove(delFile)
         else:
@@ -652,8 +730,12 @@ class myWindow(QMainWindow):
         if msg == QMessageBox.Yes:
             print('Deletion confirmed.')
             for delFile in self.copyList:
-                self.process.execute("gio", ["trash", delFile])
+                try:
+                    send2trash(delFile)
+                except OSError as e:
+                    self.infobox(str(e))
                 print("%s %s" % ("file moved to trash:", delFile))
+                self.statusBar().showMessage("%s %s" % ("file moved to trash:", delFile), 0)
         else:
             print('No clicked.')
 
@@ -773,4 +855,4 @@ if __name__ == '__main__':
         w.listview.setRootIndex(w.fileModel.setRootPath(path))
         w.treeview.setRootIndex(w.dirModel.setRootPath(path))
         w.setWindowTitle(path)
-    sys.exit(app.exec_())   
+    sys.exit(app.exec_()) 
