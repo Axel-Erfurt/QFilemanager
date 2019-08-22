@@ -12,6 +12,7 @@ made in Linux Mint 19
 - open Files with default app
 - create zip from Folder
 - create zip from selected File(s)
+- extract zip Files
 - show/hide hidden File(s)
 - show Text in built-in Texteditor
 - show Image in built-in Image Viewer
