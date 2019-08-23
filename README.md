@@ -34,4 +34,8 @@ made in Linux Mint 19
 - open folder in Terminal (F7)
 - execute File in Terminal (F8)
 
+### Usage:
+
+> python3 QFileManager.py
+
 ![screenshot](https://github.com/Axel-Erfurt/QFilemanager/blob/master/screenshot.png)
