@@ -123,7 +123,6 @@ class myWindow(QMainWindow):
         self.fileModel.setResolveSymlinks(True)
 
         self.treeview.setModel(self.dirModel)
-        self.treeview.setTreePosition(-1)
         self.treeview.hideColumn(1)
         self.treeview.hideColumn(2)
         self.treeview.hideColumn(3)
@@ -148,6 +147,10 @@ class myWindow(QMainWindow):
         self.treeview.setCurrentIndex(self.dirModel.index(docs))
         self.treeview.expand(self.treeview.currentIndex())
 
+        self.treeview.setTreePosition(0)
+        self.treeview.setUniformRowHeights(True)
+        self.treeview.setIndentation(10)
+
         self.splitter.setSizes([20, 160])
 
         self.listview.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -156,6 +159,7 @@ class myWindow(QMainWindow):
         self.listview.setAcceptDrops(True)
         self.listview.setDropIndicatorShown(True)
         self.listview.setEditTriggers(QAbstractItemView.SelectedClicked)
+        self.listview.setIndentation(3)
 
         self.treeview.setDragDropMode(QAbstractItemView.DragDrop)
         self.treeview.setDragEnabled(True)
@@ -165,6 +169,15 @@ class myWindow(QMainWindow):
         print("Welcome to QFileManager")
         self.readSettings()
         self.enableHidden()
+        self.getRowCount()
+
+    def getRowCount(self):
+        count = 0
+        index = self.treeview.selectionModel().currentIndex()
+        path = QDir(self.dirModel.fileInfo(index).absoluteFilePath())
+        count = len(path.entryList(QDir.Files))
+        self.statusBar().showMessage("%s %s" % (count, "Files"), 0)
+        return count
 
     def closeEvent(self, e):
         print("writing settings ...\nGoodbye ...")
@@ -199,13 +212,13 @@ class myWindow(QMainWindow):
             self.dirModel.setFilter(QDir.NoDotAndDotDot | QDir.Hidden | QDir.AllDirs)
             self.hiddenEnabled = True
             self.hiddenAction.setChecked(True)
-            print("toggled hidden files to true")
+            print("set hidden files to true")
         else:
             self.fileModel.setFilter(QDir.NoDotAndDotDot | QDir.Files)
             self.dirModel.setFilter(QDir.NoDotAndDotDot | QDir.AllDirs)
             self.hiddenEnabled = False
             self.hiddenAction.setChecked(False)
-            print("toggled hidden files to false")
+            print("set hidden files to false")
 
     def openNewWin(self):
         index = self.treeview.selectionModel().currentIndex()
@@ -500,6 +513,7 @@ class myWindow(QMainWindow):
         self.listview.setRootIndex(self.fileModel.setRootPath(path))
         self.currentPath = path
         self.setWindowTitle(path)
+        self.getRowCount()
 
     def openFile(self):
         index = self.listview.selectionModel().currentIndex()
@@ -855,4 +869,5 @@ if __name__ == '__main__':
         w.listview.setRootIndex(w.fileModel.setRootPath(path))
         w.treeview.setRootIndex(w.dirModel.setRootPath(path))
         w.setWindowTitle(path)
-    sys.exit(app.exec_()) 
+    sys.exit(app.exec_())
+    
