@@ -581,7 +581,7 @@ class myWindow(QMainWindow):
         self.currentPath = path
         self.setWindowTitle(path)
         self.getRowCount()
-        self.treeview.scrollTo(index, QAbstractItemView.PositionAtCenter)
+#        self.treeview.scrollTo(index, QAbstractItemView.PositionAtCenter)
 #        self.on_clicked(index)
 
     def openFile(self):
