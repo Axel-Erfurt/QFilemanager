@@ -9,6 +9,7 @@
 ############################################
 import sys
 import os
+import errno
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPixmap
@@ -16,6 +17,7 @@ from PyQt5.Qt import QKeySequence, QCursor, QDesktopServices
 import findFilesWindow
 import QTextEdit
 import Qt5Player
+import QAudioPlayer
 import QImageViewer
 import QWebViewer
 from zipfile import ZipFile
@@ -48,17 +50,23 @@ class helpWindow(QMainWindow):
         self.btnAbout.setIcon(QIcon.fromTheme("help-about"))
         self.btnAbout.clicked.connect(self.aboutApp)
 
+        self.btnClose = QPushButton("Close")
+        self.btnClose.setFixedWidth(66)
+        self.btnClose.setIcon(QIcon.fromTheme("window-close"))
+        self.btnClose.clicked.connect(self.close)
+
         widget = QWidget(self)
         layout = QVBoxLayout(widget)
 
         layout.addWidget(self.helpViewer)
         layout.addStretch()
         layout.addWidget(self.btnAbout, alignment=Qt.AlignCenter)
+        layout.addWidget(self.btnClose, alignment=Qt.AlignCenter)
         self.setCentralWidget(widget)
 
+#        self.setWindowFlags(Qt.FramelessWindowHint)
         self.setWindowTitle("Help")
         self.setWindowIcon(QIcon.fromTheme("help-about"))
-        self.setGeometry(0, 26, 240, 270)
 
     def aboutApp(self):
         sysinfo = QSysInfo()
@@ -73,7 +81,7 @@ class helpWindow(QMainWindow):
         self.infobox(title, message)
 
     def infobox(self,title, message):
-        QMessageBox(QMessageBox.Information, title, message, QMessageBox.NoButton, self, Qt.Dialog|Qt.NoDropShadowWindowHint).show()  
+        QMessageBox(QMessageBox.Information, title, message, QMessageBox.NoButton, self, Qt.Dialog|Qt.NoDropShadowWindowHint | Qt.FramelessWindowHint).show()  
 
 
 class myWindow(QMainWindow):
@@ -87,12 +95,14 @@ class myWindow(QMainWindow):
 
         self.settings = QSettings("QFileManager", "QFileManager")
         self.clip = QApplication.clipboard()
+        self.isInEditMode = False
 
         self.treeview = QTreeView()
         self.listview = QTreeView()
 
         self.cut = False
         self.hiddenEnabled = False
+        self.folder_copied = ""
 
         self.splitter = QSplitter()
         self.splitter.setOrientation(Qt.Horizontal)
@@ -111,6 +121,30 @@ class myWindow(QMainWindow):
         path = QDir.rootPath()
         self.copyPath = ""
         self.copyList = []
+        self.copyListNew = ""
+
+        self.createActions()
+
+        self.tBar = self.addToolBar("Tools")
+        self.tBar.setContextMenuPolicy(Qt.PreventContextMenu)
+        self.tBar.setMovable(False)
+        self.tBar.setIconSize(QSize(16, 16))
+        self.tBar.addAction(self.createFolderAction)
+        self.tBar.addAction(self.copyFolderAction)
+        self.tBar.addAction(self.pasteFolderAction)
+        self.tBar.addSeparator()
+        self.tBar.addAction(self.copyAction)
+        self.tBar.addAction(self.cutAction)
+        self.tBar.addAction(self.pasteAction)
+        self.tBar.addSeparator()
+        self.tBar.addAction(self.findFilesAction)
+        self.tBar.addSeparator()
+        self.tBar.addAction(self.delActionTrash)
+        self.tBar.addAction(self.delAction)
+        self.tBar.addSeparator()
+        self.tBar.addAction(self.terminalAction)
+        self.tBar.addSeparator()
+        self.tBar.addAction(self.helpAction)
 
         self.dirModel = QFileSystemModel()
         self.dirModel.setReadOnly(False)
@@ -134,8 +168,7 @@ class myWindow(QMainWindow):
         self.listview.header().resizeSection(1, 80)
         self.listview.header().resizeSection(2, 80)
         self.listview.setSortingEnabled(True) 
-
-        self.createActions()
+        self.treeview.setSortingEnabled(True) 
 
         self.treeview.setRootIndex(self.dirModel.index(path))
 
@@ -149,7 +182,13 @@ class myWindow(QMainWindow):
 
         self.treeview.setTreePosition(0)
         self.treeview.setUniformRowHeights(True)
+        self.treeview.setExpandsOnDoubleClick(False)
         self.treeview.setIndentation(10)
+        self.treeview.setDragDropMode(QAbstractItemView.DragDrop)
+        self.treeview.setDragEnabled(True)
+        self.treeview.setAcceptDrops(True)
+        self.treeview.setDropIndicatorShown(True)
+        self.treeview.sortByColumn(0, Qt.AscendingOrder)
 
         self.splitter.setSizes([20, 160])
 
@@ -158,14 +197,10 @@ class myWindow(QMainWindow):
         self.listview.setDragEnabled(True)
         self.listview.setAcceptDrops(True)
         self.listview.setDropIndicatorShown(True)
-        self.listview.setEditTriggers(QAbstractItemView.SelectedClicked)
+#        self.listview.setEditTriggers(QAbstractItemView.EditKeyPressed)
         self.listview.setIndentation(3)
-
-        self.treeview.setDragDropMode(QAbstractItemView.DragDrop)
-        self.treeview.setDragEnabled(True)
-        self.treeview.setAcceptDrops(True)
-        self.treeview.setDropIndicatorShown(True)
         self.listview.sortByColumn(0, Qt.AscendingOrder)
+
         print("Welcome to QFileManager")
         self.readSettings()
         self.enableHidden()
@@ -221,12 +256,14 @@ class myWindow(QMainWindow):
             print("set hidden files to false")
 
     def openNewWin(self):
+        self.copyListNew = ""
         index = self.treeview.selectionModel().currentIndex()
         path = self.dirModel.fileInfo(index).absoluteFilePath()
         theApp =  sys.argv[0]
         if QDir(path).exists:
             print("open '", path, "' in new window")
             self.process.startDetached("python3", [theApp, path])
+        
 
     ### actions
     def createActions(self):
@@ -250,7 +287,9 @@ class myWindow(QMainWindow):
         self.renameAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.renameAction) 
 
-        self.renameFolderAction = QAction(QIcon.fromTheme("accessories-text-editor"), "rename File",  triggered=self.renameFolder) 
+        self.renameFolderAction = QAction(QIcon.fromTheme("accessories-text-editor"), "rename Folder",  triggered=self.renameFolder) 
+#        self.renameAction.setShortcut(QKeySequence(Qt.Key_F2))
+#        self.renameAction.setShortcutVisibleInContextMenu(True)
         self.treeview.addAction(self.renameFolderAction) 
 
         self.copyAction = QAction(QIcon.fromTheme("edit-copy"), "copy File(s)",  triggered=self.copyFile) 
@@ -258,12 +297,19 @@ class myWindow(QMainWindow):
         self.copyAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.copyAction) 
 
+        self.copyFolderAction = QAction(QIcon.fromTheme("edit-copy"), "copy Folder",  triggered=self.copyFolder) 
+        self.treeview.addAction(self.copyFolderAction) 
+
+        self.pasteFolderAction = QAction(QIcon.fromTheme("edit-paste"), "paste Folder",  triggered=self.pasteFolder) 
+        self.treeview.addAction(self.pasteFolderAction) 
+#        self.listview.addAction(self.pasteFolderAction) 
+
         self.cutAction = QAction(QIcon.fromTheme("edit-cut"), "cut File(s)",  triggered=self.cutFile) 
         self.cutAction.setShortcut(QKeySequence("Ctrl+x"))
         self.cutAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.cutAction) 
 
-        self.pasteAction = QAction(QIcon.fromTheme("edit-paste"), "paste File(s)",  triggered=self.pasteFile) 
+        self.pasteAction = QAction(QIcon.fromTheme("edit-paste"), "paste File(s) / Folder",  triggered=self.pasteFile) 
         self.pasteAction.setShortcut(QKeySequence("Ctrl+v"))
         self.pasteAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.pasteAction) 
@@ -327,6 +373,9 @@ class myWindow(QMainWindow):
         self.playlistAction = QAction(QIcon.fromTheme("audio-x-generic"), "make playlist from all mp3 files",  triggered=self.makePlaylist)
         self.listview.addAction(self.playlistAction)
 
+        self.playlistPlayerAction = QAction(QIcon.fromTheme("audio-x-generic"), "play Playlist",  triggered=self.playPlaylist)
+        self.listview.addAction(self.playlistPlayerAction)
+
         self.refreshAction = QAction(QIcon.fromTheme("view-refresh"), "refresh View",  triggered=self.refreshList)
         self.refreshAction.setShortcut(QKeySequence(Qt.Key_F5))
         self.refreshAction.setShortcutVisibleInContextMenu(True)
@@ -359,6 +408,16 @@ class myWindow(QMainWindow):
 
         self.createFolderAction = QAction(QIcon.fromTheme("folder-new"), "create new Folder",  triggered=self.createNewFolder)
         self.treeview.addAction(self.createFolderAction) 
+
+    def playPlaylist(self):
+        index = self.listview.selectionModel().currentIndex()
+        path = self.fileModel.fileInfo(index).absoluteFilePath()
+        self.player = QAudioPlayer.Player('')
+        self.player.setGeometry(100,100,500,350)
+        self.player.show()
+        self.player.clearList()
+        self.player.openOnStart(path)
+        print("added Files to playlist")
 
     def showImage(self):
         index = self.listview.selectionModel().currentIndex()
@@ -489,19 +548,27 @@ class myWindow(QMainWindow):
                     mp3List.append(self.currentPath + "/" + name)
         
         mp3List.sort(key=str.lower)
-        print('\n'.join(mp3List))
 
         with open(path, 'w') as playlist:
             playlist.write('\n'.join(mp3List))
             playlist.close()
 
     def showHelp(self):
+        top = self.y() + 26
+        left = self.width() / 2 - 100
+        print(top)
         self.w = helpWindow()
+        self.w.setWindowFlags(Qt.FramelessWindowHint)
+        self.w.setWindowModality(Qt.ApplicationModal)
+        self.w.setGeometry(left, top , 240, 300)
         self.w.show()
 
     def on_clicked(self, index):
-        expand = not(self.treeview.isExpanded(index))
-        self.treeview.setExpanded(index, expand)
+        index = self.treeview.selectionModel().currentIndex()
+        if not(self.treeview.isExpanded(index)):
+            self.treeview.setExpanded(index, True)
+        else:
+            self.treeview.setExpanded(index, False)
 
     def getFolderSize(self, path):
         size = sum(os.path.getsize(f) for f in os.listdir(folder) if os.path.isfile(f))
@@ -514,6 +581,8 @@ class myWindow(QMainWindow):
         self.currentPath = path
         self.setWindowTitle(path)
         self.getRowCount()
+        self.treeview.scrollTo(index, QAbstractItemView.PositionAtCenter)
+#        self.on_clicked(index)
 
     def openFile(self):
         index = self.listview.selectionModel().currentIndex()
@@ -586,6 +655,7 @@ class myWindow(QMainWindow):
             self.menu.addAction(self.copyAction) 
             self.menu.addAction(self.cutAction) 
             self.menu.addAction(self.pasteAction) 
+#            self.menu.addAction(self.pasteFolderAction)
             self.menu.addAction(self.terminalAction) 
             self.menu.addAction(self.startInTerminalAction) 
             self.menu.addAction(self.executableAction)
@@ -613,6 +683,8 @@ class myWindow(QMainWindow):
             self.menu.addAction(self.delActionTrash) 
             self.menu.addAction(self.delAction) 
             self.menu.addSeparator()
+            if ".m3u" in path:
+                    self.menu.addAction(self.playlistPlayerAction)
             extensions = [".mp3", ".mp4", "mpg", ".m4a", ".mpeg", "avi", ".mkv", ".webm", 
                                     ".wav", ".ogg", ".flv ", ".vob", ".ogv", ".ts", ".m2v", "m4v", "3gp", ".f4v"]
             for ext in extensions:
@@ -649,6 +721,8 @@ class myWindow(QMainWindow):
                 self.menu.addAction(self.newWinAction)
                 self.menu.addAction(self.createFolderAction)
                 self.menu.addAction(self.renameFolderAction)
+                self.menu.addAction(self.copyFolderAction)
+                self.menu.addAction(self.pasteFolderAction)
                 self.menu.addAction(self.delFolderAction)
                 self.menu.addAction(self.terminalAction) 
                 self.menu.addAction(self.findFilesAction)
@@ -677,12 +751,33 @@ class myWindow(QMainWindow):
                 self.infobox(error)
 
     def renameFile(self):
-        index = self.listview.selectionModel().currentIndex()
-        self.listview.edit(index)
+        if self.listview.selectionModel().hasSelection():
+            index = self.listview.selectionModel().currentIndex()
+            path = self.fileModel.fileInfo(index).absoluteFilePath() 
+            basepath = self.fileModel.fileInfo(index).path() 
+            print(basepath)
+            oldName = self.fileModel.fileInfo(index).fileName() 
+            dlg = QInputDialog()
+            newName, ok = dlg.getText(self, 'new Name:', path, QLineEdit.Normal, oldName, Qt.Dialog)
+            if ok:
+                newpath = basepath + "/" + newName
+                QFile.rename(path, newpath)
+
 
     def renameFolder(self):
         index = self.treeview.selectionModel().currentIndex()
-        self.treeview.edit(index)
+        path = self.dirModel.fileInfo(index).absoluteFilePath()
+        basepath = self.dirModel.fileInfo(index).path() 
+        print("pasepath:", basepath)
+        oldName = self.dirModel.fileInfo(index).fileName() 
+        dlg = QInputDialog()
+        newName, ok = dlg.getText(self, 'new Name:', path, QLineEdit.Normal, oldName, Qt.Dialog)
+        if ok:
+            newpath = basepath + "/" + newName
+            print(newpath)
+            nd = QDir(path)
+            check = nd.rename(path, newpath)
+#            self.treeview.selectionModel().select(index)
 
     def copyFile(self):
         self.copyList = []
@@ -695,17 +790,56 @@ class myWindow(QMainWindow):
             self.clip.setText(path, 1)
         print("%s\n%s" % ("filepath(s) copied:", '\n'.join(self.copyList)))
 
-    def pasteFile(self):
+    def copyFolder(self):
         index = self.treeview.selectionModel().currentIndex()
-        file_index = self.listview.selectionModel().currentIndex()
-        for target in self.copyList:
-            print(target)
-            destination = self.dirModel.fileInfo(index).absoluteFilePath() + "/" + QFileInfo(target).fileName()
-            print("%s %s" % ("pasted File to", destination))
-            QFile.copy(target, destination)
-            if self.cut == True:
-                QFile.remove(target)
-            self.cut == False
+        folderpath = self.dirModel.fileInfo(index).absoluteFilePath()  
+        print("%s\n%s" % ("folderpath copied:", folderpath))
+        self.folder_copied = folderpath
+        self.copyList = []
+
+    def pasteFolder(self):
+        index = self.treeview.selectionModel().currentIndex()
+        target = self.folder_copied
+        destination = self.dirModel.fileInfo(index).absoluteFilePath() + "/" + QFileInfo(self.folder_copied).fileName()
+        print("%s %s %s" % (target, "will be pasted to", destination))
+#        if not QFile.copy(target, destination):
+#            self.infobox('Directory not copied.')
+#            print('Error', 'Directory not copied.')
+#        else:
+#            print("%s %s %s" % (target, "pasted to", destination))
+        try:
+            shutil.copytree(target, destination)
+        except OSError as e:
+            # If the error was caused because the source wasn't a directory
+            if e.errno == errno.ENOTDIR:
+                shutil.copy(target, destination)
+            else:
+                self.infobox('Error', 'Directory not copied. Error: %s' % e)
+
+    def pasteFile(self):
+        if len(self.copyList) > 0:
+            index = self.treeview.selectionModel().currentIndex()
+            file_index = self.listview.selectionModel().currentIndex()
+            for target in self.copyList:
+                print(target)
+                destination = self.dirModel.fileInfo(index).absoluteFilePath() + "/" + QFileInfo(target).fileName()
+                print("%s %s" % ("pasted File to", destination))
+                QFile.copy(target, destination)
+                if self.cut == True:
+                    QFile.remove(target)
+                self.cut == False
+        else:
+            index = self.treeview.selectionModel().currentIndex()
+            target = self.folder_copied
+            destination = self.dirModel.fileInfo(index).absoluteFilePath() + "/" + QFileInfo(self.folder_copied).fileName()
+            try:
+                shutil.copytree(target, destination)
+            except OSError as e:
+                # If the error was caused because the source wasn't a directory
+                if e.errno == errno.ENOTDIR:
+                    shutil.copy(target, destination)
+                else:
+                    print('Directory not copied. Error: %s' % e)
 
     def cutFile(self):
         self.cut = True
@@ -838,6 +972,7 @@ border-style: solid;
 border-color: darkgrey;
 height: 26px;
 width: 66px;
+font-size: 8pt;
 border-width: 1px;
 border-radius: 6px;
 }
@@ -869,5 +1004,4 @@ if __name__ == '__main__':
         w.listview.setRootIndex(w.fileModel.setRootPath(path))
         w.treeview.setRootIndex(w.dirModel.setRootPath(path))
         w.setWindowTitle(path)
-    sys.exit(app.exec_())
-    
+    sys.exit(app.exec_())   
