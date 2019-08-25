@@ -38,4 +38,4 @@ made in Linux Mint 19
 
 > python3 QFileManager.py
 
-![screenshot](https://github.com/Axel-Erfurt/QFilemanager/blob/master/screenshot.png)
+![screenshot](https://github.com/Axel-Erfurt/QFilemanager/blob/master/screenshot2.png)
