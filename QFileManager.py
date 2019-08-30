@@ -11,6 +11,8 @@ import sys
 import os
 import errno
 import getpass
+import socket
+import time
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QIcon, QPixmap
@@ -21,6 +23,7 @@ import Qt5Player
 import QAudioPlayer
 import QImageViewer
 import QWebViewer
+import QTerminalFolder
 from zipfile import ZipFile
 import shutil
 import subprocess
@@ -129,6 +132,17 @@ class myWindow(QMainWindow):
 
         self.createActions()
 
+        self.findfield = QLineEdit()
+        self.findfield.addAction(QIcon.fromTheme("edit-find"), QLineEdit.LeadingPosition)
+        self.findfield.setClearButtonEnabled(True)
+        self.findfield.setFixedWidth(150)
+        self.findfield.setPlaceholderText("find")
+        self.findfield.setToolTip("press RETURN to find")
+        self.findfield.setText("")
+        self.findfield.returnPressed.connect(self.findFiles)
+
+        self.findfield.installEventFilter(self)
+
         self.tBar = self.addToolBar("Tools")
         self.tBar.setContextMenuPolicy(Qt.PreventContextMenu)
         self.tBar.setMovable(False)
@@ -161,6 +175,8 @@ class myWindow(QMainWindow):
         self.tBar.addSeparator()
         self.tBar.addAction(self.btnBack)
         self.tBar.addAction(self.btnUp)
+
+        self.tBar.addWidget(self.findfield)
 
         self.dirModel = QFileSystemModel()
         self.dirModel.setReadOnly(False)
@@ -284,7 +300,6 @@ class myWindow(QMainWindow):
 
     ### actions
     def createActions(self):
-
         self.btnBack = QAction(QIcon.fromTheme("go-previous"), "go back", triggered = self.goBack)
         self.btnUp = QAction(QIcon.fromTheme("go-up"), "go up", triggered = self.goUp)
         self.btnHome = QAction(QIcon.fromTheme("go-home"), "home folder", triggered = self.goHome)
@@ -314,10 +329,9 @@ class myWindow(QMainWindow):
         self.renameAction.setShortcut(QKeySequence(Qt.Key_F2))
         self.renameAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.renameAction) 
+        self.treeview.addAction(self.renameAction) 
 
         self.renameFolderAction = QAction(QIcon.fromTheme("accessories-text-editor"), "rename Folder",  triggered=self.renameFolder) 
-#        self.renameAction.setShortcut(QKeySequence(Qt.Key_F2))
-#        self.renameAction.setShortcutVisibleInContextMenu(True)
         self.treeview.addAction(self.renameFolderAction) 
 
         self.copyAction = QAction(QIcon.fromTheme("edit-copy"), "copy File(s)",  triggered=self.copyFile) 
@@ -404,19 +418,19 @@ class myWindow(QMainWindow):
         self.playlistPlayerAction = QAction(QIcon.fromTheme("audio-x-generic"), "play Playlist",  triggered=self.playPlaylist)
         self.listview.addAction(self.playlistPlayerAction)
 
-        self.refreshAction = QAction(QIcon.fromTheme("view-refresh"), "refresh View",  triggered=self.refreshList)
-        self.refreshAction.setShortcut(QKeySequence(Qt.Key_F5))
+        self.refreshAction = QAction(QIcon.fromTheme("view-refresh"), "refresh View",  triggered=self.refreshList, shortcut="F5")
         self.refreshAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.refreshAction) 
 
         self.hiddenAction = QAction("show hidden Files",  triggered=self.enableHidden)
         self.hiddenAction.setShortcut(QKeySequence("Ctrl+h"))
-        self.hiddenAction.setCheckable(True)
         self.hiddenAction.setShortcutVisibleInContextMenu(True)
+        self.hiddenAction.setCheckable(True)
         self.listview.addAction(self.hiddenAction)
 
         self.goBackAction = QAction(QIcon.fromTheme("go-back"), "go back",  triggered=self.goBack)
         self.goBackAction.setShortcut(QKeySequence(Qt.Key_Backspace))
+        self.goBackAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.goBackAction) 
 
         self.helpAction = QAction(QIcon.fromTheme("help"), "Help",  triggered=self.showHelp)
@@ -431,8 +445,8 @@ class myWindow(QMainWindow):
         self.listview.addAction(self.terminalAction) 
 
         self.startInTerminalAction = QAction(QIcon.fromTheme("terminal"), "execute in Terminal",  triggered=self.startInTerminal)
-        self.terminalAction.setShortcut(QKeySequence(Qt.Key_F8))
-        self.terminalAction.setShortcutVisibleInContextMenu(True)
+        self.startInTerminalAction.setShortcut(QKeySequence(Qt.Key_F8))
+        self.startInTerminalAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.startInTerminalAction) 
 
         self.executableAction = QAction(QIcon.fromTheme("applications-utilities"), "make executable",  triggered=self.makeExecutable)
@@ -492,18 +506,47 @@ class myWindow(QMainWindow):
             os.chmod(path, st.st_mode | stat.S_IEXEC)
 
     def showInTerminal(self):
-        index = self.treeview.selectionModel().currentIndex()
-        path = self.dirModel.fileInfo(index).absoluteFilePath()
-        wd = "--working-directory=" + path
-        print(wd)
-        self.process.startDetached("xfce4-terminal", ["--geometry", "140x30+0+28", wd])
-#        subprocess.call(["xfce4-terminal", "--geometry", "140x30+0+28", wd])
+        if self.treeview.hasFocus():
+            index = self.treeview.selectionModel().currentIndex()
+            path = self.dirModel.fileInfo(index).absoluteFilePath()
+        elif self.listview.hasFocus():
+            index = self.listview.selectionModel().currentIndex()
+            path = self.fileModel.fileInfo(index).absoluteFilePath()
+        self.terminal = QTerminalFolder.MainWindow()
+        self.terminal.show()
+        if self.terminal.isVisible():
+            os.chdir(path)
+            self.terminal.shellWin.startDir = path
+            self.terminal.shellWin.name = (str(getpass.getuser()) + "@" + str(socket.gethostname()) 
+                                    + ":" + str(path) + "$ ")
+            self.terminal.shellWin.appendPlainText(self.terminal.shellWin.name)
 
     def startInTerminal(self):
         if self.listview.selectionModel().hasSelection():
             index = self.listview.selectionModel().currentIndex()
+            filename = self.fileModel.fileInfo(index).fileName()
             path = self.fileModel.fileInfo(index).absoluteFilePath()
-            self.process.startDetached("xfce4-terminal", ["--geometry", "140x30+0+28", "-e", path])
+            folderpath = self.fileModel.fileInfo(index).path()
+            if not self.fileModel.fileInfo(index).isDir():
+                self.terminal = QTerminalFolder.MainWindow()
+                self.terminal.show()
+                if self.terminal.isVisible():
+                    os.chdir(folderpath)
+                    self.terminal.shellWin.startDir = folderpath
+                    self.terminal.shellWin.name = (str(getpass.getuser()) + "@" + str(socket.gethostname()) 
+                                            + ":" + str(folderpath) + "$ ")
+                    self.terminal.shellWin.appendPlainText(self.terminal.shellWin.name)
+                    self.terminal.shellWin.insertPlainText("./%s" % (filename))
+            else:
+                self.terminal = QTerminalFolder.MainWindow()
+                self.terminal.show()
+                if self.terminal.isVisible():
+                    os.chdir(path)
+                    self.terminal.shellWin.startDir = path
+                    self.terminal.shellWin.name = (str(getpass.getuser()) + "@" + str(socket.gethostname()) 
+                                            + ":" + str(path) + "$ ")
+                    self.terminal.shellWin.appendPlainText(self.terminal.shellWin.name)
+
 
     def createZipFromFolder(self):
         index = self.treeview.selectionModel().currentIndex()
@@ -549,12 +592,14 @@ class myWindow(QMainWindow):
                zipObj.extractall(dirpath)
 
     def findFiles(self):
+        print("find")
         index = self.treeview.selectionModel().currentIndex()
         path = self.dirModel.fileInfo(index).absoluteFilePath()
         print("open findWindow")
         self.w = findFilesWindow.ListBox()
         self.w.show()
         self.w.folderEdit.setText(path)
+        self.w.findEdit.setText(self.findfield.text())
 
     def refreshList(self):
         print("refreshing view")
@@ -829,13 +874,12 @@ class myWindow(QMainWindow):
             self.menu.popup(QCursor.pos())
 
     def createNewFolder(self):
-        if self.treeview.selectionModel().hasSelection():
-            index = self.treeview.selectionModel().currentIndex()
-            path = self.dirModel.fileInfo(index).absoluteFilePath()
-            dlg = QInputDialog(self)
-            foldername, ok = dlg.getText(self, 'Folder Name', "Folder Name:", QLineEdit.Normal, "", Qt.Dialog)
-            if ok:
-                success = QDir(path).mkdir(foldername)
+        index = self.treeview.selectionModel().currentIndex()
+        path = self.dirModel.fileInfo(index).absoluteFilePath()
+        dlg = QInputDialog(self)
+        foldername, ok = dlg.getText(self, 'Folder Name', "Folder Name:", QLineEdit.Normal, "", Qt.Dialog)
+        if ok:
+            success = QDir(path).mkdir(foldername)
 
     def runPy2(self):
         if self.listview.selectionModel().hasSelection():
@@ -853,34 +897,34 @@ class myWindow(QMainWindow):
                 self.infobox(error)
 
     def renameFile(self):
-        if self.listview.selectionModel().hasSelection():
-            index = self.listview.selectionModel().currentIndex()
-            path = self.fileModel.fileInfo(index).absoluteFilePath() 
-            basepath = self.fileModel.fileInfo(index).path() 
-            print(basepath)
-            oldName = self.fileModel.fileInfo(index).fileName() 
-            dlg = QInputDialog()
-            newName, ok = dlg.getText(self, 'new Name:', path, QLineEdit.Normal, oldName, Qt.Dialog)
-            if ok:
-                newpath = basepath + "/" + newName
-                QFile.rename(path, newpath)
-
+        if self.listview.hasFocus():
+            if self.listview.selectionModel().hasSelection():
+                index = self.listview.selectionModel().currentIndex()
+                path = self.fileModel.fileInfo(index).absoluteFilePath() 
+                basepath = self.fileModel.fileInfo(index).path() 
+                print(basepath)
+                oldName = self.fileModel.fileInfo(index).fileName() 
+                dlg = QInputDialog()
+                newName, ok = dlg.getText(self, 'new Name:', path, QLineEdit.Normal, oldName, Qt.Dialog)
+                if ok:
+                    newpath = basepath + "/" + newName
+                    QFile.rename(path, newpath)
+        elif self.treeview.hasFocus():
+            self.renameFolder()
 
     def renameFolder(self):
-        if self.treeview.selectionModel().hasSelection():
-            index = self.treeview.selectionModel().currentIndex()
-            path = self.dirModel.fileInfo(index).absoluteFilePath()
-            basepath = self.dirModel.fileInfo(index).path() 
-            print("pasepath:", basepath)
-            oldName = self.dirModel.fileInfo(index).fileName() 
-            dlg = QInputDialog()
-            newName, ok = dlg.getText(self, 'new Name:', path, QLineEdit.Normal, oldName, Qt.Dialog)
-            if ok:
-                newpath = basepath + "/" + newName
-                print(newpath)
-                nd = QDir(path)
-                check = nd.rename(path, newpath)
-    #            self.treeview.selectionModel().select(index)
+        index = self.treeview.selectionModel().currentIndex()
+        path = self.dirModel.fileInfo(index).absoluteFilePath()
+        basepath = self.dirModel.fileInfo(index).path() 
+        print("pasepath:", basepath)
+        oldName = self.dirModel.fileInfo(index).fileName() 
+        dlg = QInputDialog()
+        newName, ok = dlg.getText(self, 'new Name:', path, QLineEdit.Normal, oldName, Qt.Dialog)
+        if ok:
+            newpath = basepath + "/" + newName
+            print(newpath)
+            nd = QDir(path)
+            check = nd.rename(path, newpath)
 
     def copyFile(self):
         self.copyList = []
@@ -890,7 +934,7 @@ class myWindow(QMainWindow):
             path = self.currentPath + "/" + self.fileModel.data(index,self.fileModel.FileNameRole)
             print(path, "copied to clipboard")
             self.copyList.append(path)
-            self.clip.setText(path, 1)
+            self.clip.setText('\n'.join(self.copyList))
         print("%s\n%s" % ("filepath(s) copied:", '\n'.join(self.copyList)))
 
     def copyFolder(self):
@@ -905,11 +949,6 @@ class myWindow(QMainWindow):
         target = self.folder_copied
         destination = self.dirModel.fileInfo(index).absoluteFilePath() + "/" + QFileInfo(self.folder_copied).fileName()
         print("%s %s %s" % (target, "will be pasted to", destination))
-#        if not QFile.copy(target, destination):
-#            self.infobox('Directory not copied.')
-#            print('Error', 'Directory not copied.')
-#        else:
-#            print("%s %s %s" % (target, "pasted to", destination))
         try:
             shutil.copytree(target, destination)
         except OSError as e:
@@ -1095,6 +1134,10 @@ border-color: darkgrey;
 border-width: 1px;
 border-radius: 4px;
 }
+QToolButton
+{
+padding-left: 2px; padding-right: 2px;
+}
     """       
 
 if __name__ == '__main__':
@@ -1108,3 +1151,4 @@ if __name__ == '__main__':
         w.treeview.setRootIndex(w.dirModel.setRootPath(path))
         w.setWindowTitle(path)
     sys.exit(app.exec_())
+    
