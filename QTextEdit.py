@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QRect, QSettings, QSize, Qt, QTextStream, QDir, QLocale, QLibraryInfo, QTime, QTimer)
+from PyQt5.QtCore import (QFile, QFileInfo, QPoint, QRect, QSettings, QSize, Qt, QTextStream, QDir, QTranslator, QLocale, QLibraryInfo, QTime, QTimer, QStandardPaths)
 from PyQt5.QtGui import QIcon, QKeySequence, QTextCursor, QClipboard
 from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QMainWindow, QMessageBox, QTextEdit, QPushButton, QLineEdit, QMenu, QInputDialog, QLCDNumber)
 from PyQt5 import QtPrintSupport
@@ -72,7 +72,8 @@ class MainWindow(QMainWindow):
 
     def open(self):
         if self.maybeSave():
-            fileName, _ = QFileDialog.getOpenFileName(self, "Open File", QDir.homePath() + "/Documents", "Text Dateien (*.txt *.csv *.sh *.py) ;; alle Dateien (*.*)")
+            documents = QStandardPaths.standardLocations(QStandardPaths.DocumentsLocation)[0]
+            fileName, _ = QFileDialog.getOpenFileName(self, "open File", documents, "Text Files (*.txt *.csv *.sh *.py) ;; all Files (*.*)")
             if fileName:
                 self.loadFile(fileName)
             else:
@@ -96,7 +97,8 @@ class MainWindow(QMainWindow):
             if self.curFile:
                 fileName, _ = QFileDialog.getSaveFileName(self, "Save as...", self.curFile, "Text Files (*.txt)")
             else:
-                fileName, _ = QFileDialog.getSaveFileName(self, "Save as...", QDir.homePath() + "/Documents/new.txt", "Text Files (*.txt)" )
+                documents = QStandardPaths.standardLocations(QStandardPaths.DocumentsLocation)[0]
+                fileName, _ = QFileDialog.getSaveFileName(self, "Save as...", documents + "/newDocument.txt", "Text Files (*.txt)" )
             if fileName:
                 return self.saveFile(fileName)
 
@@ -109,7 +111,7 @@ class MainWindow(QMainWindow):
         cmenu = self.myeditor.createStandardContextMenu()
         if not self.myeditor.textCursor().selectedText() == "":
             cmenu.addSeparator()
-            cmenu.addAction(QIcon.fromTheme("edit-find-and-replace"),"replace all", self.replaceThis)
+            cmenu.addAction(QIcon.fromTheme("edit-find-and-replace"),"replace all occurrences", self.replaceThis)
         cmenu.exec_(self.myeditor.mapToGlobal(point))    
 
     def replaceThis(self):
@@ -126,7 +128,7 @@ class MainWindow(QMainWindow):
 
     def about(self):
         link = "<p><a title='Axel Schneider' href='http://goodoldsongs.jimdo.com' target='_blank'>Axel Schneider</a></p>"
-        title = "about QTextEdit"
+        title = "über QTextEdit"
         message =  ("<span style='text-shadow: #2e3436 2px 2px 2px; color: #6169e1; font-size: 24pt;font-weight: bold;'><strong>QTextEdit 1.2</strong></span></p><br><br>created by<h2 >" + link + "</h2> with PyQt5" 
                     "<br><br>Copyright © 2018 The Qt Company Ltd and other contributors." 
                     "<br>Qt and the Qt logo are trademarks of The Qt Company Ltd.")
@@ -136,25 +138,25 @@ class MainWindow(QMainWindow):
         self.setWindowModified(self.myeditor.document().isModified())
 
     def createActions(self):
-        self.newAct = QAction(QIcon.fromTheme('document-new'), "&New", self,
-                shortcut=QKeySequence.New, statusTip="create new Document",
+        self.newAct = QAction(QIcon.fromTheme('document-new'), "&Neu", self,
+                shortcut=QKeySequence.New, statusTip="new Document",
                 triggered=self.newFile)
 
-        self.openAct = QAction(QIcon.fromTheme('document-open'), "Open",
+        self.openAct = QAction(QIcon.fromTheme('document-open'), "open File",
                 self, shortcut=QKeySequence.Open,
                 statusTip="open File", triggered=self.open)
 
         self.saveAct = QAction(QIcon.fromTheme('document-save'), "Save", self,
                 shortcut=QKeySequence.Save,
-                statusTip="save File", triggered=self.save)
+                statusTip="save Document", triggered=self.save)
 
         self.saveAsAct = QAction(QIcon.fromTheme('document-save-as'),"Save as...", self,
                 shortcut=QKeySequence.SaveAs,
-                statusTip="save Document to new File",
+                statusTip="save Document to new filename",
                 triggered=self.saveAs)
 
         self.exitAct = QAction(QIcon.fromTheme('application-exit'),"Exit", self, shortcut="Ctrl+Q",
-                statusTip="exit App", triggered=self.close)
+                statusTip="exit", triggered=self.close)
 
         self.cutAct = QAction(QIcon.fromTheme('edit-cut'), "Cut", self,
                 shortcut=QKeySequence.Cut,
@@ -182,14 +184,15 @@ class MainWindow(QMainWindow):
                 triggered=self.myeditor.redo)
 
         self.aboutAct = QAction(QIcon.fromTheme('help-about'),"Info", self,
-                statusTip="über QTextEdit",
+                statusTip="about QTextEdit",
                 triggered=self.about)
 
-        self.aboutQtAct = QAction(QIcon.fromTheme('help-about'),"about Qt", self,
-                statusTip="about Qt",
+        self.aboutQtAct = QAction(QIcon.fromTheme('help-about'),"über Qt", self,
+                statusTip="über Qt",
                 triggered=QApplication.instance().aboutQt)
 
         self.repAllAct = QPushButton("replace all") 
+        self.repAllAct.setFixedWidth(100)
         self.repAllAct.setIcon(QIcon.fromTheme("edit-find-and-replace"))
         self.repAllAct.setStatusTip("replace all")
         self.repAllAct.clicked.connect(self.replaceAll)
@@ -207,7 +210,7 @@ class MainWindow(QMainWindow):
         self.printPreviewAct = QAction("Print Preview", self, shortcut=QKeySequence.Print,statusTip="Print Preview", triggered=self.handlePrintPreview)
         self.printPreviewAct.setIcon(QIcon.fromTheme("document-print-preview"))
         ### print
-        self.printAct = QAction("Print", self, shortcut=QKeySequence.Print,statusTip="print Document", triggered=self.handlePrint)
+        self.printAct = QAction("print Document", self, shortcut=QKeySequence.Print,statusTip="print Document", triggered=self.handlePrint)
         self.printAct.setIcon(QIcon.fromTheme("document-print"))
 
         for i in range(self.MaxRecentFiles):
@@ -218,7 +221,7 @@ class MainWindow(QMainWindow):
     def findText(self):
         word = self.findfield.text()
         if self.myeditor.find(word):
-            self.statusBar().showMessage("'" + word + "' found", 2000)
+            self.statusBar().showMessage("found '" + word + "'", 2000)
         else:
             self.myeditor.moveCursor(QTextCursor.Start)            
             if self.myeditor.find(word):
@@ -328,7 +331,7 @@ class MainWindow(QMainWindow):
         self.replacefield.setClearButtonEnabled(True)
         self.replacefield.setFixedWidth(200)
         self.replacefield.setPlaceholderText("replace with")
-        self.replacefield.setStatusTip("press RETURN to find first")
+        self.replacefield.setStatusTip("press RETURN to replace first only")
         self.replacefield.returnPressed.connect(self.replaceOne)
         self.findToolBar.addSeparator() 
         self.findToolBar.addWidget(self.replacefield)
@@ -393,7 +396,7 @@ class MainWindow(QMainWindow):
         QApplication.restoreOverrideCursor()
 
         self.setCurrentFile(fileName);
-        self.statusBar().showMessage("Filke '" +  fileName + "' saved", 3000)
+        self.statusBar().showMessage("File '" +  fileName + "' saved", 3000)
         return True
 
     def setCurrentFile(self, fileName):
@@ -449,8 +452,8 @@ class MainWindow(QMainWindow):
 
     def handlePrint(self):
         if self.myeditor.toPlainText() == "":
-            self.statusBar().showMessage("no Text to print!")
-            self.msgbox("no Text to print!")
+            self.statusBar().showMessage("no Text to print")
+            self.msgbox("kein Text zum Drucken")
         else:
             dialog = QtPrintSupport.QPrintDialog()
             if dialog.exec_() == QDialog.Accepted:
@@ -459,8 +462,8 @@ class MainWindow(QMainWindow):
             
     def handlePrintPreview(self):
         if self.myeditor.toPlainText() == "":
-            self.statusBar().showMessage("no Text to preview!")
-            self.msgbox("no Text to preview!")
+            self.statusBar().showMessage("no text to preview")
+            self.msgbox("kein Text für Vorschau")
         else:
             dialog = QtPrintSupport.QPrintPreviewDialog()
             dialog.setGeometry(10, 0, self.width() - 60, self.height() - 60)
@@ -530,12 +533,14 @@ color: #204a87;
 }
     """       
 
-#if __name__ == '__main__':
-#    app = QApplication(sys.argv)
-#    mainWin = MainWindow()
-##    assert(mainWin.locale().language() == QLocale.German)
-#    mainWin.show()
-#    if len(sys.argv) > 1:
-#        print(sys.argv[1])
-#        mainWin.loadFile(sys.argv[1])
-#    sys.exit(app.exec_())
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    mainWin = MainWindow()
+#    assert(mainWin.locale().language() == QLocale.German)
+    mainWin.show()
+    if len(sys.argv) > 1:
+        print(sys.argv[1])
+        if not sys.argv[1] == "":
+            mainWin.myeditor.setPlainText(sys.argv[1])
+            mainWin.myeditor.document().setModified()
+    sys.exit(app.exec_())
