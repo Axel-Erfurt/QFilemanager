@@ -30,6 +30,20 @@ import subprocess
 import stat
 from send2trash import send2trash
 
+home = QStandardPaths.standardLocations(QStandardPaths.HomeLocation)[0]
+username = home.rpartition("/")[-1]
+media = "/media/" + username
+
+music = QStandardPaths.standardLocations(QStandardPaths.MusicLocation)[0]
+videos = QStandardPaths.standardLocations(QStandardPaths.MoviesLocation)[0]
+documents = QStandardPaths.standardLocations(QStandardPaths.DocumentsLocation)[0]
+pictures = QStandardPaths.standardLocations(QStandardPaths.PicturesLocation)[0]
+downloads = QStandardPaths.standardLocations(QStandardPaths.DownloadLocation)[0]
+apps = QStandardPaths.standardLocations(QStandardPaths.ApplicationsLocation)[0]
+temp = QStandardPaths.standardLocations(QStandardPaths.TempLocation)[0]
+config = QStandardPaths.standardLocations(QStandardPaths.ConfigLocation)[0]
+appdata = QStandardPaths.standardLocations(QStandardPaths.AppDataLocation)[0]
+
 class helpWindow(QMainWindow):
     def __init__(self):
         super(helpWindow, self).__init__()
@@ -168,6 +182,10 @@ class myWindow(QMainWindow):
         self.tBar.addAction(self.btnUp)
         self.tBar.addWidget(self.findfield)
         self.tBar.addAction(self.findFilesAction)
+        self.cmb = QComboBox()
+        self.cmb.activated.connect(self.setFolder)
+        self.cmb.setFixedWidth(200)
+        self.tBar.addWidget(self.cmb)
 
         self.dirModel = QFileSystemModel()
         self.dirModel.setReadOnly(False)
@@ -229,6 +247,8 @@ class myWindow(QMainWindow):
         path = self.dirModel.fileInfo(index).absoluteFilePath()
         self.setWindowTitle(path)
 
+        self.fillCombo()
+
         self.splitter.setSizes([40, 80])
 
         print("Welcome to QFileManager")
@@ -236,6 +256,45 @@ class myWindow(QMainWindow):
         self.enableHidden()
         self.treeview.setFocus()
         self.getRowCount()
+        ind = self.cmb.findText(self.windowTitle())
+        self.cmb.setCurrentIndex(ind)
+
+    def fillCombo(self):
+        self.cmb.addItem("/")
+        ### media folder ###
+        usb = QDir(media).entryList(["*"], QDir.Dirs | QDir.NoDot | QDir.NoDotDot)
+        for disk in usb:
+            self.cmb.addItem(media + "/" + disk)
+
+        self.cmb.addItem(home)
+        self.cmb.addItem(documents)
+        self.cmb.addItem(pictures)
+        self.cmb.addItem(music)
+        self.cmb.addItem(videos)
+        self.cmb.addItem(downloads)
+        self.cmb.addItem(apps)
+        self.cmb.addItem(appdata)
+        self.cmb.addItem(config)
+        self.cmb.addItem(home + "/.local")
+        self.cmb.addItem("/bin")
+        self.cmb.addItem(temp)
+        #######################################################
+        combolist = []
+        for row in range(self.cmb.count()):
+            combolist.append(self.cmb.itemText(row).rpartition("/")[2])
+        #######################################################
+        currentDir = QDir(home)
+        disks = currentDir.entryList(["*"], QDir.Dirs | QDir.NoDot | QDir.NoDotDot)
+        for disk in disks:
+            if not disk in combolist:
+                self.cmb.addItem(QDir.homePath() + "/" + disk)
+
+    def setFolder(self):
+        path = self.cmb.currentText()
+        if self.listview.selectionModel().hasSelection():
+            self.listview.setRootIndex(self.fileModel.setRootPath(path))
+        if self.treeview.selectionModel().hasSelection():
+            self.treeview.setRootIndex(self.dirModel.setRootPath(path))
 
     def setNewWindowTitle(self):
         if self.listview.hasFocus():
@@ -1201,7 +1260,6 @@ class myWindow(QMainWindow):
                 index = self.listview.selectionModel().currentIndex()
                 path = self.fileModel.fileInfo(index).absoluteFilePath() 
                 basepath = self.fileModel.fileInfo(index).path() 
-                print(basepath)
                 oldName = self.fileModel.fileInfo(index).fileName() 
                 dlg = QInputDialog()
                 newName, ok = dlg.getText(self, 'new Name:', path, QLineEdit.Normal, oldName, Qt.Dialog)
@@ -1210,11 +1268,11 @@ class myWindow(QMainWindow):
                     QFile.rename(path, newpath)
         elif self.treeview.hasFocus():
             if self.treeview.selectionModel().hasSelection():
-                index = self.listview.selectionModel().currentIndex()
+                index = self.treeview.selectionModel().currentIndex()
                 path = self.dirModel.fileInfo(index).absoluteFilePath() 
                 basepath = self.dirModel.fileInfo(index).path() 
-                print(basepath)
                 oldName = self.dirModel.fileInfo(index).fileName() 
+                print("oldName:", oldName)
                 dlg = QInputDialog()
                 newName, ok = dlg.getText(self, 'new Name:', path, QLineEdit.Normal, oldName, Qt.Dialog)
                 if ok:
