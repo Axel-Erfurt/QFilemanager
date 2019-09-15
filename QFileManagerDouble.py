@@ -144,9 +144,6 @@ class myWindow(QMainWindow):
         self.tBar.setMovable(False)
         self.tBar.setIconSize(QSize(16, 16))
         self.tBar.addAction(self.createFolderAction)
-        self.tBar.addAction(self.copyFolderAction)
-        self.tBar.addAction(self.pasteFolderAction)
-        self.tBar.addSeparator()
         self.tBar.addAction(self.copyAction)
         self.tBar.addAction(self.cutAction)
         self.tBar.addAction(self.pasteAction)
@@ -342,7 +339,7 @@ class myWindow(QMainWindow):
         self.btnDocuments = QAction(QIcon.fromTheme("folder-documents"), "documents folder", triggered = self.goDocuments)
         self.btnDownloads = QAction(QIcon.fromTheme("folder-downloads"), "downloads folder", triggered = self.goDownloads)
         self.btnVideo = QAction(QIcon.fromTheme("folder-video"), "video folder", triggered = self.goVideo)
-        self.openAction = QAction(QIcon.fromTheme("system-run"), "open File",  triggered=self.openFile)
+        self.openAction = QAction(QIcon.fromTheme("system-run"), "open File with default app",  triggered=self.openFile)
         self.listview.addAction(self.openAction) 
         self.treeview.addAction(self.openAction) 
 
@@ -372,13 +369,6 @@ class myWindow(QMainWindow):
         self.copyAction.setShortcut(QKeySequence("Ctrl+c"))
         self.copyAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.copyAction) 
-
-        self.copyFolderAction = QAction(QIcon.fromTheme("edit-copy"), "copy Folder",  triggered=self.copyFolder) 
-        self.treeview.addAction(self.copyFolderAction) 
-
-        self.pasteFolderAction = QAction(QIcon.fromTheme("edit-paste"), "paste Folder",  triggered=self.pasteFolder) 
-        self.treeview.addAction(self.pasteFolderAction) 
-        self.listview.addAction(self.pasteFolderAction) 
 
         self.cutAction = QAction(QIcon.fromTheme("edit-cut"), "cut File(s)",  triggered=self.cutFile) 
         self.cutAction.setShortcut(QKeySequence("Ctrl+x"))
@@ -823,7 +813,7 @@ class myWindow(QMainWindow):
                     if self.checkIsApplication(path) == True:
                         self.process.startDetached(files)
                     else:
-                        QDesktopServices.openUrl(QUrl(files , QUrl.TolerantMode | QUrl.EncodeUnicode))
+                        QDesktopServices.openUrl(QUrl.fromLocalFile(files))
         elif self.treeview.hasFocus():
             if self.treeview.selectionModel().hasSelection():
                 index = self.treeview.selectionModel().currentIndex()
@@ -834,7 +824,7 @@ class myWindow(QMainWindow):
                     if self.checkIsApplication(path) == True:
                         self.process.startDetached(files)
                     else:
-                        QDesktopServices.openUrl(QUrl(files , QUrl.TolerantMode | QUrl.EncodeUnicode))
+                        QDesktopServices.openUrl(QUrl.fromLocalFile(files))
 
     def openFileText(self):
         if self.listview.hasFocus():
@@ -1032,18 +1022,16 @@ class myWindow(QMainWindow):
                 self.menu = QMenu(self.listview)
                 self.menu.addAction(self.createFolderAction)
                 self.menu.addAction(self.openAction)
-                self.menu.addAction(self.openActionText)
-                self.menu.addAction(self.openActionTextRoot)
+                if not os.path.isdir(path):
+                    self.menu.addAction(self.openActionText)
+                    self.menu.addAction(self.openActionTextRoot)
                 self.menu.addSeparator()
                 if os.path.isdir(path):
                     self.menu.addAction(self.newWinAction) 
                 self.menu.addSeparator()
                 self.menu.addAction(self.renameAction) 
                 self.menu.addSeparator()
-                if self.fileModel.fileInfo(index).isDir():
-                    self.menu.addAction(self.copyFolderAction) 
-                else:
-                    self.menu.addAction(self.copyAction) 
+                self.menu.addAction(self.copyAction) 
                 self.menu.addAction(self.cutAction) 
                 self.menu.addAction(self.terminalAction) 
                 self.menu.addAction(self.startInTerminalAction) 
@@ -1108,18 +1096,16 @@ class myWindow(QMainWindow):
                 self.menu = QMenu(self.treeview)
                 self.menu.addAction(self.createFolderAction)
                 self.menu.addAction(self.openAction)
-                self.menu.addAction(self.openActionText)
-                self.menu.addAction(self.openActionTextRoot)
+                if not os.path.isdir(path):
+                    self.menu.addAction(self.openActionText)
+                    self.menu.addAction(self.openActionTextRoot)
                 self.menu.addSeparator()
                 if os.path.isdir(path):
                     self.menu.addAction(self.newWinAction) 
                 self.menu.addSeparator()
                 self.menu.addAction(self.renameAction) 
                 self.menu.addSeparator()
-                if self.dirModel.fileInfo(index).isDir():
-                    self.menu.addAction(self.copyFolderAction) 
-                else:
-                    self.menu.addAction(self.copyAction) 
+                self.menu.addAction(self.copyAction) 
                 self.menu.addAction(self.cutAction) 
                 self.menu.addAction(self.terminalAction) 
                 self.menu.addAction(self.startInTerminalAction) 
@@ -1292,56 +1278,22 @@ class myWindow(QMainWindow):
                     self.clip.setText('\n'.join(self.copyList))
                 print("%s\n%s" % ("filepath(s) copied:", '\n'.join(self.copyList)))
 
-    def copyFolder(self):
-        if self.listview.hasFocus():
-            if self.listview.selectionModel().hasSelection():
-                index = self.listview.selectionModel().currentIndex()
-                folderpath = self.fileModel.fileInfo(index).absoluteFilePath()  
-                print("%s\n%s" % ("folderpath copied:", folderpath))
-                self.folder_copied = folderpath
-                self.copyList = []
-        elif self.treeview.hasFocus():
-            if self.treeview.selectionModel().hasSelection():
-                index = self.treeview.selectionModel().currentIndex()
-                folderpath = self.dirModel.fileInfo(index).absoluteFilePath()  
-                print("%s\n%s" % ("folderpath copied:", folderpath))
-                self.folder_copied = folderpath
-                self.copyList = []
-
-    def pasteFolder(self):
-        target = self.folder_copied
-        destination = self.windowTitle() + "/" + QFileInfo(self.folder_copied).fileName()
-        print("%s %s %s" % (target, "will be pasted to", destination))
-        try:
-            shutil.copytree(target, destination)
-        except OSError as e:
-            # If the error was caused because the source wasn't a directory
-            if e.errno == errno.ENOTDIR:
-                shutil.copy(target, destination)
-            else:
-                self.infobox('Directory not copied. Error: %s' % e)
-
     def pasteFile(self):
         if len(self.copyList) > 0:
             for target in self.copyList:
                 print(target)
                 destination = self.windowTitle() + "/" + QFileInfo(target).fileName()
-                print("%s %s" % ("pasted File to", destination))
-                QFile.copy(target, destination)
+                try:
+                    shutil.copytree(target, destination)
+                except OSError as e:
+                    # If the error was caused because the source wasn't a directory
+                    if e.errno == errno.ENOTDIR:
+                        shutil.copy(target, destination)
+                    else:
+                        self.infobox('Directory not copied. Error: %s' % e)
                 if self.cut == True:
                     QFile.remove(target)
                 self.cut == False
-        else:
-            target = self.folder_copied
-            destination = self.windowTitle() + "/" + QFileInfo(self.folder_copied).fileName()
-            try:
-                shutil.copytree(target, destination)
-            except OSError as e:
-                # If the error was caused because the source wasn't a directory
-                if e.errno == errno.ENOTDIR:
-                    shutil.copy(target, destination)
-                else:
-                    self.infobox('Directory not copied. Error: %s' % e)
 
     def cutFile(self):
         self.cut = True
@@ -1560,3 +1512,4 @@ if __name__ == '__main__':
         w.treeview.setRootIndex(w.dirModel.setRootPath(path))
         w.setWindowTitle(path)
     sys.exit(app.exec_())
+    
