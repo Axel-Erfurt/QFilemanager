@@ -171,21 +171,28 @@ class myWindow(QMainWindow):
         empty = QWidget()
         empty.setMinimumWidth(60)
         self.tBar.addWidget(empty)
-        self.tBar.addSeparator()
         self.tBar.addAction(self.btnHome)
         self.tBar.addAction(self.btnDocuments)
         self.tBar.addAction(self.btnDownloads)
         self.tBar.addAction(self.btnMusic)
         self.tBar.addAction(self.btnVideo)
-        self.tBar.addSeparator()
+        empty = QWidget()
+        empty.setMinimumWidth(20)
+        self.tBar.addWidget(empty)
         self.tBar.addAction(self.btnBack)
         self.tBar.addAction(self.btnUp)
-        self.tBar.addWidget(self.findfield)
-        self.tBar.addAction(self.findFilesAction)
+        empty = QWidget()
+        empty.setMinimumWidth(20)
+        self.tBar.addWidget(empty)
         self.cmb = QComboBox()
         self.cmb.activated.connect(self.setFolder)
         self.cmb.setFixedWidth(200)
         self.tBar.addWidget(self.cmb)
+        empty = QWidget()
+        empty.setMinimumWidth(30)
+        self.tBar.addWidget(empty)
+        self.tBar.addWidget(self.findfield)
+        self.tBar.addAction(self.findFilesAction)
 
         self.dirModel = QFileSystemModel()
         self.dirModel.setReadOnly(False)
@@ -249,7 +256,7 @@ class myWindow(QMainWindow):
 
         self.fillCombo()
 
-        self.splitter.setSizes([40, 80])
+        self.splitter.setSizes([50, 50])
 
         print("Welcome to QFileManager")
         self.readSettings()
@@ -977,7 +984,7 @@ class myWindow(QMainWindow):
                 if self.checkIsApplication(path) == True:
                     self.process.startDetached(path)
                 else:
-                    self.listview.setRootPath(path)
+                    QDesktopServices.openUrl(QUrl.fromLocalFile(path))
             else:
                 self.listview.setRootIndex(self.fileModel.setRootPath(path))
                 self.setWindowTitle(path)
@@ -988,7 +995,7 @@ class myWindow(QMainWindow):
                 if self.checkIsApplication(path) == True:
                     self.process.startDetached(path)
                 else:
-                    self.treeview.setRootPath(path)
+                    QDesktopServices.openUrl(QUrl.fromLocalFile(path))
             else:
                 self.treeview.setRootIndex(self.dirModel.setRootPath(path))
                 self.setWindowTitle(path)
@@ -1145,8 +1152,6 @@ class myWindow(QMainWindow):
                     if path.endswith(ext):
                         self.menu.addAction(self.unzipHereAction)
                         self.menu.addAction(self.unzipToAction)
-                self.menu.addSeparator()
-                self.menu.addAction(self.helpAction) 
                 self.menu.popup(QCursor.pos())
         elif self.treeview.hasFocus():
             if self.treeview.selectionModel().hasSelection():
@@ -1219,8 +1224,6 @@ class myWindow(QMainWindow):
                     if ext in path:
                         self.menu.addAction(self.unzipHereAction)
                         self.menu.addAction(self.unzipToAction)
-                self.menu.addSeparator()
-                self.menu.addAction(self.helpAction) 
                 self.menu.popup(QCursor.pos())
 
     def createNewFolder(self):
@@ -1343,15 +1346,18 @@ class myWindow(QMainWindow):
                 destination = self.windowTitle() + "/" + QFileInfo(target).fileName()
                 try:
                     shutil.copytree(target, destination)
+                    if self.cut == True:
+                        QFile.remove(target)
+                        self.cut == False
                 except OSError as e:
                     # If the error was caused because the source wasn't a directory
                     if e.errno == errno.ENOTDIR:
                         shutil.copy(target, destination)
+                        if self.cut == True:
+                            QFile.remove(target)
+                            self.cut == False
                     else:
                         self.infobox('Directory not copied. Error: %s' % e)
-                if self.cut == True:
-                    QFile.remove(target)
-                self.cut == False
 
     def cutFile(self):
         self.cut = True
@@ -1471,6 +1477,10 @@ QTreeView::item::focus
 background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #729fcf, stop: 1  #204a87);
 border: 0px;
 }
+QTreeView::focus
+{
+border: 1px solid darkblue;
+}
 QMenu
 {
 background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
@@ -1488,6 +1498,7 @@ QHeaderView
 background: #d3d7cf;
 color: #555753;
 font-weight: bold;
+border: 0px solid #555753;
 }
 QStatusBar
 {
@@ -1557,8 +1568,20 @@ QToolButton
 {
 padding-left: 2px; padding-right: 2px;
 }
-    """       
-
+QScrollBar::vertical
+{
+    width: 10px;
+}
+QScrollBar::horizontal
+{
+    height: 10px;
+}   
+    QSplitter::handle
+{
+    width: 8px;
+    height: 8px;
+}
+    """  
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     w = myWindow()
@@ -1570,4 +1593,3 @@ if __name__ == '__main__':
         w.treeview.setRootIndex(w.dirModel.setRootPath(path))
         w.setWindowTitle(path)
     sys.exit(app.exec_())
-    
