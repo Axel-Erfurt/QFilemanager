@@ -134,6 +134,13 @@ class myWindow(QMainWindow):
         wid = QWidget()
         wid.setLayout(hlay)
         self.createStatusBar()
+
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setFixedHeight(18)
+        self.progress_bar.setFixedWidth(200)
+        self.progress_bar.setMaximum(100)
+        self.statusBar().addPermanentWidget(self.progress_bar)
+
         self.setCentralWidget(wid)
         self.setGeometry(0, 26, 900,500)
 
@@ -534,6 +541,8 @@ class myWindow(QMainWindow):
         self.treeview.addAction(self.terminalAction) 
         self.listview.addAction(self.terminalAction) 
 
+        self.terminalAction2 = QAction(QIcon.fromTheme("terminal"), "open folder in Terminal",  triggered=self.showInTerminal2)
+
         self.startInTerminalAction = QAction(QIcon.fromTheme("terminal"), "execute in Terminal",  triggered=self.startInTerminal)
         self.startInTerminalAction.setShortcut(QKeySequence(Qt.Key_F8))
         self.startInTerminalAction.setShortcutVisibleInContextMenu(True)
@@ -640,6 +649,17 @@ class myWindow(QMainWindow):
         elif self.listview.hasFocus():
             index = self.listview.selectionModel().currentIndex()
             path = self.fileModel.fileInfo(index).absoluteFilePath()
+        self.terminal = QTerminalFolder.MainWindow()
+        self.terminal.show()
+        if self.terminal.isVisible():
+            os.chdir(path)
+            self.terminal.shellWin.startDir = path
+            self.terminal.shellWin.name = (str(getpass.getuser()) + "@" + str(socket.gethostname()) 
+                                    + ":" + str(path) + "$ ")
+            self.terminal.shellWin.appendPlainText(self.terminal.shellWin.name)
+
+    def showInTerminal2(self):
+        path = self.windowTitle()
         self.terminal = QTerminalFolder.MainWindow()
         self.terminal.show()
         if self.terminal.isVisible():
@@ -1082,10 +1102,15 @@ class myWindow(QMainWindow):
 
     def contextMenuEvent(self, event):
         if self.listview.hasFocus():
-            if self.listview.selectionModel().hasSelection():
+            self.menu = QMenu(self.listview)
+            if not self.listview.selectionModel().hasSelection():
+                self.menu.addAction(self.createFolderAction)
+                self.menu.addAction(self.pasteAction) 
+                self.menu.addAction(self.terminalAction2) 
+                self.menu.popup(QCursor.pos())
+            elif self.listview.selectionModel().hasSelection():
                 index = self.listview.selectionModel().currentIndex()
                 path = self.fileModel.fileInfo(index).absoluteFilePath()
-                self.menu = QMenu(self.listview)
                 self.menu.addAction(self.createFolderAction)
                 self.menu.addAction(self.openAction)
                 if not os.path.isdir(path):
@@ -1153,11 +1178,17 @@ class myWindow(QMainWindow):
                         self.menu.addAction(self.unzipHereAction)
                         self.menu.addAction(self.unzipToAction)
                 self.menu.popup(QCursor.pos())
+        ######### treeview ############
         elif self.treeview.hasFocus():
-            if self.treeview.selectionModel().hasSelection():
+            self.menu = QMenu(self.treeview)
+            if not self.treeview.selectionModel().hasSelection():
+                self.menu.addAction(self.createFolderAction)
+                self.menu.addAction(self.pasteAction) 
+                self.menu.addAction(self.terminalAction2) 
+                self.menu.popup(QCursor.pos())
+            elif self.treeview.selectionModel().hasSelection():
                 index = self.treeview.selectionModel().currentIndex()
                 path = self.dirModel.fileInfo(index).absoluteFilePath()
-                self.menu = QMenu(self.treeview)
                 self.menu.addAction(self.createFolderAction)
                 self.menu.addAction(self.openAction)
                 if not os.path.isdir(path):
@@ -1221,7 +1252,7 @@ class myWindow(QMainWindow):
                 self.menu.addAction(self.zipFilesAction)
                 zip_extension = [".zip", ".tar.gz", ".tgz", ".rar"]
                 for ext in zip_extension:
-                    if ext in path:
+                    if path.endswith(ext):
                         self.menu.addAction(self.unzipHereAction)
                         self.menu.addAction(self.unzipToAction)
                 self.menu.popup(QCursor.pos())
