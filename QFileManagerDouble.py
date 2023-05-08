@@ -112,6 +112,8 @@ class myWindow(QMainWindow):
         self.setWindowTitle("Filemanager")
         self.setWindowIcon(QIcon.fromTheme("system- file-manager"))
         self.process = QProcess()
+        
+        self.hiddenEnabled = False
 
         self.settings = QSettings("QFileManager", "QFileManager")
         self.clip = QApplication.clipboard()
