@@ -13,10 +13,14 @@ import errno
 import getpass
 import socket
 import time
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QLabel, QPushButton, 
+                                                QTreeView, QSplitter, QHBoxLayout, QVBoxLayout, 
+                                                QWidget, QAction, QLineEdit, QFileSystemModel, 
+                                                QAbstractItemView, QMenu, QMessageBox)
+from PyQt5.QtCore import Qt, QProcess, QSettings, QEvent, QUrl
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.Qt import QKeySequence, QCursor, QDesktopServices
+from PyQt5.Qt import (QKeySequence, QCursor, QDesktopServices, QSysInfo, 
+                                    QDir, QFile, QSize, QStandardPaths, QPoint)
 import findFilesWindow
 import QTextEdit
 import Qt5Player
@@ -33,7 +37,7 @@ from send2trash import send2trash
 class helpWindow(QMainWindow):
     def __init__(self):
         super(helpWindow, self).__init__()
-        self.setStyleSheet(mystylesheet(myWindow()))
+        self.setStyleSheet(mystylesheet(MainWindow()))
         self.helpText ="""<p style=" margin-top:2px; margin-bottom:2px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><!--StartFragment--><span style=" font-family:'Helvetica'; font-size:11pt; font-weight:600; text-decoration: underline; color:#2e3436;">Shortcuts:</span></p><br>
 <p style=" margin-top:2px; margin-bottom:2px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">rename File (F2)</span></p>
 <p style=" margin-top:2px; margin-bottom:2px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">copy File(s) (Ctrl-C)</span></p>
@@ -48,6 +52,7 @@ class helpWindow(QMainWindow):
 <p style=" margin-top:2px; margin-bottom:2px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">execute File in Terminal (F8)</span>
 <p style=" margin-top:2px; margin-bottom:2px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">go back (Backspace)</span></p>
 <p style=" margin-top:2px; margin-bottom:2px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">refresh View (F5)</span></p>
+<p style=" margin-top:2px; margin-bottom:2px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><span style=" font-family:'Helvetica'; font-size:10pt; color:#2e3436;">open File (Space)</span></p>
 <!--EndFragment--></p>
                                         """
         self.helpViewer = QLabel(self.helpText, self)
@@ -91,9 +96,9 @@ class helpWindow(QMainWindow):
         QMessageBox(QMessageBox.Information, title, message, QMessageBox.NoButton, self, Qt.Dialog|Qt.NoDropShadowWindowHint | Qt.FramelessWindowHint).show()  
 
 
-class myWindow(QMainWindow):
+class MainWindow(QMainWindow):
     def __init__(self):
-        super(myWindow, self).__init__()
+        super(MainWindow, self).__init__()
 
         self.setStyleSheet(mystylesheet(self))
         self.setWindowTitle("Filemanager")
@@ -134,12 +139,12 @@ class myWindow(QMainWindow):
 
         self.findfield = QLineEdit()
         self.findfield.addAction(QIcon.fromTheme("edit-find"), QLineEdit.LeadingPosition)
+        self.findfield.returnPressed.connect(self.findFiles)
         self.findfield.setClearButtonEnabled(True)
         self.findfield.setFixedWidth(150)
         self.findfield.setPlaceholderText("find")
         self.findfield.setToolTip("press RETURN to find")
         self.findfield.setText("")
-        self.findfield.returnPressed.connect(self.findFiles)
 
         self.findfield.installEventFilter(self)
 
@@ -237,7 +242,6 @@ class myWindow(QMainWindow):
         print("Welcome to QFileManager")
         self.readSettings()
         self.enableHidden()
-        self.getRowCount()
 
     def getRowCount(self):
         count = 0
@@ -308,7 +312,7 @@ class myWindow(QMainWindow):
         self.btnDownloads = QAction(QIcon.fromTheme("folder-downloads"), "downloads folder", triggered = self.goDownloads)
         self.btnVideo = QAction(QIcon.fromTheme("folder-video"), "video folder", triggered = self.goVideo)
         self.openAction = QAction(QIcon.fromTheme("system-run"), "open File",  triggered=self.openFile)
-        self.openAction.setShortcut(QKeySequence(Qt.Key_Return))
+        self.openAction.setShortcut(QKeySequence(Qt.Key_Space))
         self.openAction.setShortcutVisibleInContextMenu(True)
         self.listview.addAction(self.openAction) 
 
@@ -600,6 +604,7 @@ class myWindow(QMainWindow):
         self.w.show()
         self.w.folderEdit.setText(path)
         self.w.findEdit.setText(self.findfield.text())
+        self.w.findFiles(path)
 
     def refreshList(self):
         print("refreshing view")
@@ -1142,7 +1147,7 @@ padding-left: 2px; padding-right: 2px;
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    w = myWindow()
+    w = MainWindow()
     w.show()
     if len(sys.argv) > 1:
         path = sys.argv[1]
